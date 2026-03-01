@@ -1,0 +1,219 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+#root {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border: 3px solid #0d1117;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Marquee animation for horizontal scrolling sections */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+  display: flex;
+  width: max-content;
+}
+
+.hover\:pause-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* GitHub Sidebar Font Sizes */
+.github-name {
+  font-size: 26px;
+  line-height: 1.25;
+}
+
+.github-username {
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 24px;
+}
+
+/* GitHub Markdown rendering fixes */
+.markdown-body img {
+  background-color: transparent;
+  max-width: 100%;
+  box-sizing: content-box;
+}
+
+.markdown-body img[align="center"] {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.markdown-body img[align="right"] {
+  float: right;
+  margin-left: 4px;
+}
+
+.markdown-body img[align="left"] {
+  float: left;
+  margin-right: 4px;
+}
+
+/* Prose overrides to mimic GitHub's behavior */
+.prose :where(img):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  margin-top: 0;
+  margin-bottom: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Handle [align] attributes on block elements */
+.prose [align="center"],
+[align="center"] {
+  text-align: center;
+  justify-content: center;
+}
+
+.prose [align="right"],
+[align="right"] {
+  text-align: right;
+  justify-content: flex-end;
+}
+
+.prose [align="left"],
+[align="left"] {
+  text-align: left;
+  justify-content: flex-start;
+}
+
+/* Specific fix for badges and inline images */
+.prose a img {
+  margin: 2px !important;
+  display: inline-block !important;
+}
+
+/* Ensure block elements with align work correctly as flex containers for mixed content */
+.prose div[align],
+.prose p[align],
+.prose h1[align],
+.prose h2[align],
+.prose h3[align],
+.prose h4[align] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Fix specific heading sizes and margins to match GitHub more closely */
+.prose h1 {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-top: 0 !important;
+  margin-bottom: 1rem !important;
+}
+
+.prose h2 {
+  margin-top: 2rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.prose h3 {
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+/* Remove extra margins from paragraphs */
+.prose p {
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* Force icons in headings to be aligned without squashing banners */
+.prose h1 img,
+.prose h2 img,
+.prose h3 img {
+  height: auto;
+  max-height: 1.6em;
+  /* Allow banner-like SVGs more room */
+  width: auto;
+  margin: 0 0.25rem !important;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+/* Specific fix for the typing SVG and other banner-like header images */
+.prose h3 img[src*="typing-svg"],
+.prose h3 img[src*="demolab.com"] {
+  max-height: none;
+  /* Let the SVG define its own height */
+  height: auto;
+  min-height: 32px;
+  width: auto;
+  max-width: 100%;
+}
+
+/* More compact flex for aligned blocks */
+.prose div[align],
+.prose p[align],
+.prose h1[align],
+.prose h2[align],
+.prose h3[align] {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  align-items: center;
+}
+
+/* List item improvements */
+.prose li p {
+  margin: 0 !important;
+  display: inline;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.5rem;
+}
