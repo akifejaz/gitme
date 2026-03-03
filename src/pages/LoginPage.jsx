@@ -3,12 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 import GithubLogo from '../components/GithubLogo';
 
-const LoginPage = ({ onLogin }) => {
+const LoginPage = ({ onLogin, autoLoggingIn }) => {
     const [token, setToken] = useState('');
     const [username, setUsername] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+
+    if (autoLoggingIn) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-github-bg-tertiary p-6 animate-pulse">
+                <GithubLogo size={48} className="text-github-text-secondary opacity-50 mb-4" />
+                <p className="text-sm text-github-text-secondary font-medium tracking-wide">
+                    Authenticating automatically...
+                </p>
+            </div>
+        );
+    }
 
     const handleSubmit = async () => {
         if (!token || !username) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter as BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import LoginPage from './pages/LoginPage';
@@ -10,6 +10,24 @@ const App = () => {
   const [username, setUsername] = useState('');
   const [data, setData] = useState(null);
   const [contributionData, setContributionData] = useState(null);
+  const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(false);
+
+  // --- Automatic Login ---
+  useEffect(() => {
+    const autoUsername = import.meta.env.VITE_GITHUB_USERNAME;
+    const autoToken = import.meta.env.VITE_GITHUB_TOKEN;
+
+    if (autoUsername && autoToken && !data && !isAutoLoggingIn) {
+      setIsAutoLoggingIn(true);
+      handleLogin(autoUsername, autoToken)
+        .catch((err) => {
+          console.error("Auto-login failed:", err);
+        })
+        .finally(() => {
+          setIsAutoLoggingIn(false);
+        });
+    }
+  }, []);
 
 
 
@@ -151,7 +169,6 @@ const App = () => {
     setData(null);
     setToken('');
     setUsername('');
-    setAiInsights(null);
     setContributionData(null);
   };
 
@@ -169,7 +186,11 @@ const App = () => {
           <Route
             path="/"
             element={
-              data ? <Navigate to="/home" replace /> : <LoginPage onLogin={handleLogin} />
+              data ? (
+                <Navigate to="/home" replace />
+              ) : (
+                <LoginPage onLogin={handleLogin} autoLoggingIn={isAutoLoggingIn} />
+              )
             }
           />
           <Route
@@ -198,7 +219,7 @@ const App = () => {
         {/* Global Floating AI Chatbot */}
         {data && <GitMeChat data={data} />}
       </div>
-    </BrowserRouter>
+    </BrowserRouter >
   );
 };
 
