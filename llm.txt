@@ -1,0 +1,33 @@
+# GitMe
+> A premium dashboard and AI-powered assistant for analyzing GitHub developer impact.
+
+GitMe provides a more detailed, fair, and comprehensive view of a developer's open-source journey by extracting narratives from raw data—highlighting organizations influenced, languages mastered, and specific impact of contributions.
+
+## Key Features
+- **Detailed Work Synthesis**: Fetches full profile metadata and personal READMEs.
+- **Granular Contribution Discovery**: Categorized views for Pull Requests, Issues, and Discussions.
+- **Multi-Year Activity Context**: Multi-year contribution calendar for growth tracking.
+- **Technical Stack Visualization**: Automated extraction of primary technologies and collaborations.
+- **Integrated CV Viewer**: Premium modal for viewing professional resumes (PDF).
+- **GitMe AI Assistant**: Persistent technical recruiter persona for on-demand profile analysis.
+
+## Navigation
+- [README.md](./README.md): Comprehensive project overview, philosophy, and installation guide.
+- [userConfig.js](./userConfig.js): Centralized configuration for personal links and CV mapping.
+
+## Source Code
+- [src/App.jsx](./src/App.jsx): Main application routing and core data fetching logic from GitHub GraphQL.
+- [src/pages/LoginPage.jsx](./src/pages/LoginPage.jsx): Login interface using GitHub Personal Access Tokens.
+- [src/pages/HomePage.jsx](./src/pages/HomePage.jsx): Main dashboard with profile summary, organizations, and languages.
+- [src/pages/ProfilePage.jsx](./src/pages/ProfilePage.jsx): Detailed activity logs for PRs, Issues, and Discussions.
+- [src/components/GitMeChat.jsx](./src/components/GitMeChat.jsx): AI Chatbot component integrated with OpenRouter.
+- [src/components/CVModal.jsx](./src/components/CVModal.jsx): High-end PDF viewer component.
+- [src/components/Navbar.jsx](./src/components/Navbar.jsx): Navigation header with authentication and CV access.
+- [src/components/Footer.jsx](./src/components/Footer.jsx): Professional site footer matching the header constraints.
+
+## Technical Stack
+- **Framework**: React 18 with Vite 7.
+- **Styling**: Tailwind CSS 3.4 with custom GitHub-themed color palette.
+- **Icons**: Lucide React.
+- **APIs**: GitHub GraphQL API (v4), OpenRouter.
+- **Markdown**: `react-markdown` with GFM and Rehype Raw.

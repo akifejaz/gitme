@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { LogOut, FileText } from 'lucide-react';
 import GithubLogo from './GithubLogo';
+import CVModal from './CVModal';
+import userConfig from '../../userConfig';
 
-const Navbar = ({ data, onLogout }) => {
+const Navbar = ({ data, onLogout, username }) => {
     const navigate = useNavigate();
+    const [isCVOpen, setIsCVOpen] = useState(false);
 
     const handleLogout = () => {
         onLogout();
@@ -52,18 +55,33 @@ const Navbar = ({ data, onLogout }) => {
                 </div>
 
                 <div className="flex items-center gap-3">
-
                     {data && (
-                        <button
-                            onClick={handleLogout}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-github-text-secondary border border-github-border rounded-md hover:bg-github-accent-danger/10 hover:text-github-status-closed hover:border-github-accent-danger/50 transition-all"
-                        >
-                            <LogOut size={14} />
-                            <span className="hidden sm:inline">Sign out</span>
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setIsCVOpen(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-github-text border border-github-border rounded-md hover:bg-github-border/30 hover:border-github-text-secondary transition-all"
+                            >
+                                <FileText size={14} className="text-github-accent" />
+                                <span className="hidden sm:inline">See my CV</span>
+                            </button>
+
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-github-text-secondary border border-github-border rounded-md hover:bg-github-accent-danger/10 hover:text-github-status-closed hover:border-github-accent-danger/50 transition-all"
+                            >
+                                <LogOut size={14} />
+                                <span className="hidden sm:inline">Sign out</span>
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
+
+            <CVModal
+                isOpen={isCVOpen}
+                onClose={() => setIsCVOpen(false)}
+                username={userConfig.cvUsername || username || data?.login}
+            />
         </nav>
     );
 };

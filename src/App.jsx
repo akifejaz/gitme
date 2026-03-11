@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import GitMeChat from './components/GitMeChat';
+import Footer from './components/Footer';
 const App = () => {
   const [token, setToken] = useState('');
   const [username, setUsername] = useState('');
@@ -96,6 +97,7 @@ const App = () => {
         query($login: String!) {
           user(login: $login) {
             name
+            login
             bio
             avatarUrl
             url
@@ -174,47 +176,52 @@ const App = () => {
 
   return (
     <BrowserRouter basename="/gitme">
-      <div className="min-h-screen bg-github-bg text-github-text">
+      <div className="min-h-screen bg-github-bg text-github-text flex flex-col">
         {data && (
           <Navbar
             data={data}
+            username={username}
             onLogout={handleLogout}
           />
         )}
 
-        <Routes>
-          <Route
-            path="/"
-            element={
-              data ? (
-                <Navigate to="/home" replace />
-              ) : (
-                <LoginPage onLogin={handleLogin} autoLoggingIn={isAutoLoggingIn} />
-              )
-            }
-          />
-          <Route
-            path="/home"
-            element={
-              data ? (
-                <HomePage
-                  data={data}
-                  username={username}
-                  token={token}
-                  contributionData={contributionData}
-                />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              data ? <ProfilePage data={data} /> : <Navigate to="/" replace />
-            }
-          />
-        </Routes>
+        <main className="flex-grow">
+          <Routes>
+            <Route
+              path="/"
+              element={
+                data ? (
+                  <Navigate to="/home" replace />
+                ) : (
+                  <LoginPage onLogin={handleLogin} autoLoggingIn={isAutoLoggingIn} />
+                )
+              }
+            />
+            <Route
+              path="/home"
+              element={
+                data ? (
+                  <HomePage
+                    data={data}
+                    username={username}
+                    token={token}
+                    contributionData={contributionData}
+                  />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                data ? <ProfilePage data={data} /> : <Navigate to="/" replace />
+              }
+            />
+          </Routes>
+        </main>
+
+        {data && <Footer />}
 
         {/* Global Floating AI Chatbot */}
         {data && <GitMeChat data={data} />}

@@ -31,6 +31,7 @@ GitMe was built to provide a more detailed, fair, and comprehensive view of your
 - **Technical Stack Visualization**: Automatically extract and showcase your primary technologies and the organizations you've collaborated with through dynamic visual sections.
 - **Contextual Work Analysis**: Uses contribution metadata to synthesize a professional summary that explains your technical expertise and the real-world impact of your code.
 - **On-Demand Technical Assistant**: A persistent interface that allows recruiters or collaborators to ask specific questions about your technical background based on your live GitHub data.
+- **Integrated CV Viewer**: A premium, high-end modal interface for viewing your professional CV/resume directly within the app, complete with download and external link support.
 
 ---
 
@@ -68,6 +69,21 @@ You will need:
 - Log in with your GitHub Username and Token.
 - Use the **Overview** to see your high-level impact.
 - Use the **Contributions** tab to browse your detailed work history with advanced filters.
+- View your professional CV at any time via the **See my CV** button in the header.
+
+### 4. Customization
+You can easily personalize the profile by editing the `userConfig.js` file in the root directory:
+```javascript
+const userConfig = {
+  name: "Your Name",
+  email: "your.email@example.com",
+  linkedin: "https://linkedin.com/in/yourprofile",
+  github: "https://github.com/yourusername",
+  meetingLink: "https://calendar.app.google/yourlink",
+  cvUsername: "your_cv_filename" // Matches public/cv/your_cv_filename.pdf
+};
+```
+This file controls your social links, contact info, and the CV filename dynamically across the site.
 
 ---
 

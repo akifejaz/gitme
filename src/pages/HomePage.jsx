@@ -15,6 +15,7 @@ import {
     Sparkles
 } from 'lucide-react';
 import ContributionChart from '../components/ContributionChart';
+import userConfig from '../../userConfig';
 
 // --- Scrolling marquee wrapper ---
 const Marquee = ({ children, speed = 30 }) => {
@@ -150,7 +151,7 @@ const HomePage = ({ data, username, token, contributionData }) => {
                             Follow
                         </button>
                         <a
-                            href="https://calendar.app.google/sy4dWwRgVtXLHfBV6"
+                            href={userConfig.meetingLink}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex-1 h-8 flex items-center justify-center gap-1.5 bg-brand-action text-white text-xs font-bold rounded-md hover:brightness-110 transition-all shadow-md shadow-brand-action/20"
@@ -181,13 +182,13 @@ const HomePage = ({ data, username, token, contributionData }) => {
 
                         {/* Social Logos */}
                         <div className="flex items-center gap-4 py-1">
-                            <a href={`https://github.com/${username}`} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
+                            <a href={userConfig.github} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                                 <img src="https://cdn-icons-png.flaticon.com/512/25/25231.png" alt="GitHub" className="w-6 h-6 invert" />
                             </a>
-                            <a href="https://linkedin.com/in/akifejaz" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
+                            <a href={userConfig.linkedin} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
                                 <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" alt="LinkedIn" className="w-6 h-6" />
                             </a>
-                            <a href="mailto:akifejaz@gmail.com" className="hover:scale-110 transition-transform">
+                            <a href={`mailto:${userConfig.email}`} className="hover:scale-110 transition-transform">
                                 <img src="https://cdn-icons-png.flaticon.com/512/732/732200.png" alt="Email" className="w-6 h-6" />
                             </a>
                         </div>
