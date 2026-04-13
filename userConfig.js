@@ -10,7 +10,7 @@
 
 const userConfig = {
     name: "Akif Ejaz",
-    email: "akifejaz@gmail.com",
+    email: "akifejaz40@gmail.com",
     linkedin: "https://linkedin.com/in/akifejaz",
     github: "https://github.com/akifejaz",
     meetingLink: "https://calendar.app.google/sy4dWwRgVtXLHfBV6",
