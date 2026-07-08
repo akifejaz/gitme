@@ -102,8 +102,10 @@ const LoginPage = ({ onLogin, autoLoggingIn }) => {
                     </div>
                 </div>
                 <p className="mt-4 text-[11px] text-github-text-secondary text-center leading-relaxed">
-                    Your token is used solely to query the GitHub GraphQL API in your browser.<br />
-                    It is never stored or transmitted to any server.
+                    Your token is used only in your browser to query the GitHub GraphQL API,
+                    kept in React state, and discarded when you sign out or close the tab.<br />
+                    It is never persisted, never sent to any server run by this site,
+                    and never included in a build published to GitHub Pages.
                 </p>
             </div>
         </div>

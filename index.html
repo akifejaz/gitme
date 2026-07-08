@@ -4,21 +4,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Pre-hydration theme swap (avoids FOUC when saved theme is "light") -->
-  <script>
-    (function () {
-      try {
-        var saved = localStorage.getItem('gitme-theme');
-        var prefersLight =
-          window.matchMedia &&
-          window.matchMedia('(prefers-color-scheme: light)').matches;
-        var theme = saved || (prefersLight ? 'light' : 'dark');
-        var r = document.documentElement;
-        r.classList.remove('light', 'dark');
-        r.classList.add(theme);
-      } catch (e) { }
-    })();
-  </script>
+  <!--
+    Content-Security-Policy — defence-in-depth against XSS / supply-chain
+    compromise.
+
+    script-src is 'self' only (no 'unsafe-inline'). The pre-hydration
+    theme script is loaded as an external file (theme-init.js) precisely
+    so we can enforce this. Any future inline script or `eval()`-style
+    payload from a compromised dependency will be blocked by the browser.
+
+    style-src keeps 'unsafe-inline' because React uses `style="…"` props
+    on elements. That's a style attribute, not a `<style>` element, and
+    the CSP style-src covers both — Tailwind + React need this.
+
+    connect-src is a tight allowlist of the exact hosts the app talks to.
+    form-action is 'self' to block a compromised page from redirecting
+    form submissions off-site.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    connect-src 'self' https://api.github.com https://openrouter.ai https://www.google.com;
+    img-src 'self' data: https://avatars.githubusercontent.com https://github.com https://www.google.com https://i1.rgstatic.net;
+    font-src 'self' data:;
+    style-src 'self' 'unsafe-inline';
+    script-src 'self';
+    frame-src 'self';
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+    frame-ancestors 'none';
+  " />
+  <!-- X-Content-Type-Options via meta is a hint; GH Pages sends it too. -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <!-- Pre-hydration theme swap. External file so CSP can be strict.
+       Bare relative path — Vite adds the base prefix exactly once for
+       both dev and production. -->
+  <script src="theme-init.js"></script>
   <meta name="description"
     content="GitMe - AI-Powered GitHub Profile Analyzer & Resume Builder. Visualize your developer impact, track contributions, and synthesize professional summaries for recruiters." />
   <meta name="keywords"

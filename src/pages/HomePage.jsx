@@ -521,73 +521,70 @@ const HomePage = ({ data }) => {
                         </div>
                         <ol className="space-y-4">
                             {visiblePublications.map((p, i) => {
-                                const Wrapper = p.link ? 'a' : 'div';
-                                const wrapperProps = p.link
-                                    ? { href: p.link, target: '_blank', rel: 'noopener noreferrer' }
-                                    : {};
+                                // Row container is a plain <div> — never <a>. Individual
+                                // links (title, publishedIn) are separate anchors so no
+                                // <a> ever nests inside another <a>.
+                                const publishedIn = p.publishedIn ?? p.conference;
+                                const publishedInUrl = p.publishedInUrl ?? p.conferenceUrl;
                                 return (
-                                    <li key={i}>
-                                        <Wrapper
-                                            {...wrapperProps}
-                                            className={`group grid grid-cols-1 sm:grid-cols-[130px_1fr] gap-1 sm:gap-6 ${p.link ? 'cursor-pointer' : ''
-                                                }`}
-                                        >
-                                            <div className="font-mono text-[12px] text-github-text-secondary sm:text-right pt-1">
-                                                {p.date}
-                                            </div>
-                                            <div className="border-l border-github-border/60 pl-4 sm:pl-5">
-                                                <div className={`text-[14.5px] text-github-text leading-snug ${p.link ? 'group-hover:text-github-text-link transition-colors' : ''
-                                                    }`}>
+                                    <li
+                                        key={i}
+                                        className="group grid grid-cols-1 sm:grid-cols-[130px_1fr] gap-1 sm:gap-6"
+                                    >
+                                        <div className="font-mono text-[12px] text-github-text-secondary sm:text-right pt-1">
+                                            {p.date}
+                                        </div>
+                                        <div className="border-l border-github-border/60 pl-4 sm:pl-5">
+                                            {p.link ? (
+                                                <a
+                                                    href={p.link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-[14.5px] text-github-text leading-snug hover:text-github-text-link transition-colors inline-flex items-baseline gap-1"
+                                                >
                                                     {p.title}
-                                                    {p.link && (
-                                                        <ArrowUpRight
-                                                            size={13}
-                                                            className="inline-block ml-1 opacity-50 group-hover:opacity-100 -translate-y-[1px]"
-                                                        />
-                                                    )}
+                                                    <ArrowUpRight
+                                                        size={13}
+                                                        className="translate-y-[2px] opacity-50 group-hover:opacity-100"
+                                                    />
+                                                </a>
+                                            ) : (
+                                                <div className="text-[14.5px] text-github-text leading-snug">
+                                                    {p.title}
                                                 </div>
-                                                {(() => {
-                                                    const publishedIn =
-                                                        p.publishedIn ?? p.conference;
-                                                    const publishedInUrl =
-                                                        p.publishedInUrl ?? p.conferenceUrl;
-                                                    return (
-                                                        <div className="text-[12.5px] font-mono text-github-status-open mt-1">
-                                                            {p.venue}
-                                                            {publishedIn && (
-                                                                <>
-                                                                    <span className="text-github-text-secondary"> · </span>
-                                                                    {publishedInUrl ? (
-                                                                        <a
-                                                                            href={publishedInUrl}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            onClick={(e) => e.stopPropagation()}
-                                                                            className="text-github-text-link hover:underline"
-                                                                        >
-                                                                            {publishedIn}
-                                                                            <ArrowUpRight
-                                                                                size={11}
-                                                                                className="inline-block ml-0.5 -translate-y-[1px] opacity-70"
-                                                                            />
-                                                                        </a>
-                                                                    ) : (
-                                                                        <span className="text-github-text">
-                                                                            {publishedIn}
-                                                                        </span>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })()}
-                                                {p.authors && (
-                                                    <div className="text-[12.5px] text-github-text-secondary mt-1">
-                                                        {p.authors}
-                                                    </div>
+                                            )}
+                                            <div className="text-[12.5px] font-mono text-github-status-open mt-1">
+                                                {p.venue}
+                                                {publishedIn && (
+                                                    <>
+                                                        <span className="text-github-text-secondary"> · </span>
+                                                        {publishedInUrl ? (
+                                                            <a
+                                                                href={publishedInUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-github-text-link hover:underline"
+                                                            >
+                                                                {publishedIn}
+                                                                <ArrowUpRight
+                                                                    size={11}
+                                                                    className="inline-block ml-0.5 -translate-y-[1px] opacity-70"
+                                                                />
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-github-text">
+                                                                {publishedIn}
+                                                            </span>
+                                                        )}
+                                                    </>
                                                 )}
                                             </div>
-                                        </Wrapper>
+                                            {p.authors && (
+                                                <div className="text-[12.5px] text-github-text-secondary mt-1">
+                                                    {p.authors}
+                                                </div>
+                                            )}
+                                        </div>
                                     </li>
                                 );
                             })}

@@ -1,8 +1,14 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import GitMeChat from './components/GitMeChat';
 import Footer from './components/Footer';
+
+// Idle-timeout for the in-memory GitHub PAT. After this many minutes of
+// inactivity, we wipe state so /profile stops working and an attacker who
+// obtains a foothold later (open laptop, XSS from a compromised dep) can't
+// find the token in memory. 15 minutes matches common enterprise policy.
+const IDLE_WIPE_MINUTES = 15;
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -21,21 +27,24 @@ const App = () => {
   const [contributionData, setContributionData] = useState(null);
   const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(false);
 
-  // --- Automatic Login ---
+  // --- Automatic Login (LOCAL DEV ONLY) ---
+  // SECURITY: production builds must NOT bundle VITE_GITHUB_TOKEN. The CI
+  // workflow deliberately omits it. This block gates the whole auto-login
+  // path on `import.meta.env.DEV` so even if the vars leak through some
+  // other build, the token never gets read at runtime in production.
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
     const autoUsername = import.meta.env.VITE_GITHUB_USERNAME;
     const autoToken = import.meta.env.VITE_GITHUB_TOKEN;
+    if (!autoUsername || !autoToken || data || isAutoLoggingIn) return;
 
-    if (autoUsername && autoToken && !data && !isAutoLoggingIn) {
-      setIsAutoLoggingIn(true);
-      handleLogin(autoUsername, autoToken)
-        .catch((err) => {
-          console.error("Auto-login failed:", err);
-        })
-        .finally(() => {
-          setIsAutoLoggingIn(false);
-        });
-    }
+    setIsAutoLoggingIn(true);
+    handleLogin(autoUsername, autoToken)
+      .catch(() => {
+        // Silent — invalid or expired dev token. User can fall back to
+        // the manual login form.
+      })
+      .finally(() => setIsAutoLoggingIn(false));
   }, []);
 
 
@@ -87,8 +96,8 @@ const App = () => {
         if (result.data?.user?.contributionsCollection?.contributionCalendar) {
           return { id: period.id, calendar: result.data.user.contributionsCollection.contributionCalendar };
         }
-      } catch (err) {
-        console.error(`Error fetching calendar for ${period.id}:`, err);
+      } catch (_err) {
+        // Silent — a missing calendar year is a soft failure, not fatal.
       }
       return null;
     };
@@ -175,17 +184,57 @@ const App = () => {
       const calendars = await fetchContributionCalendar(tok, user, yearsToFetch);
       setContributionData({ years: yearsToFetch, calendar: calendars });
     } catch (err) {
-      console.error("Login error:", err);
-      throw err; // Re-throw so LoginPage can catch it
+      // Do NOT log err here — some GitHub error responses echo request
+      // metadata that includes the token. Rethrow with a scrubbed message.
+      throw new Error(err?.message || 'Sign-in failed. Check your credentials and try again.');
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setData(null);
     setToken('');
     setUsername('');
     setContributionData(null);
-  };
+  }, []);
+
+  // --- Idle-timeout token wipe -------------------------------------------
+  // Reset a timer on any user interaction. If IDLE_WIPE_MINUTES elapse
+  // with no interaction, clear all auth state. Keeps the token from
+  // living in memory on an unattended tab.
+  const idleTimerRef = useRef(null);
+  useEffect(() => {
+    if (!token) return;
+
+    const reset = () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = setTimeout(
+        handleLogout,
+        IDLE_WIPE_MINUTES * 60 * 1000
+      );
+    };
+
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'visibilitychange'];
+    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
+    reset();
+
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, reset));
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, [token, handleLogout]);
+
+  // Also wipe on `beforeunload` — belt-and-braces since React state dies
+  // with the tab anyway, but this covers same-origin navigations.
+  useEffect(() => {
+    const wipe = () => {
+      setToken('');
+      setUsername('');
+      setData(null);
+      setContributionData(null);
+    };
+    window.addEventListener('beforeunload', wipe);
+    return () => window.removeEventListener('beforeunload', wipe);
+  }, []);
 
   return (
     <BrowserRouter basename="/gitme">

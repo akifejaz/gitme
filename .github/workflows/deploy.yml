@@ -25,11 +25,23 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Build
+        # SECURITY: never pass VITE_GITHUB_TOKEN or VITE_OPENROUTER_API_KEY
+        # here. Vite inlines every VITE_* var at build time; anything set
+        # here is grep-able in the deployed JS bundle. The production site
+        # requires the user to sign in with their own GitHub PAT.
         env:
-          VITE_OPENROUTER_API_KEY: ${{ secrets.VITE_OPENROUTER_API_KEY }}
           VITE_GITHUB_USERNAME: ${{ github.repository_owner }}
-          VITE_GITHUB_TOKEN: ${{ secrets.VITE_GITHUB_TOKEN }}
         run: npm run build
+
+      # Fail loudly if a secret accidentally makes it into dist/. Adjust
+      # the grep patterns if you rotate to a token with a different prefix.
+      - name: Assert no secrets in bundle
+        run: |
+          set -e
+          if grep -rE 'github_pat_[A-Za-z0-9_]{20,}|sk-or-v1-[A-Za-z0-9]{20,}' dist/ ; then
+            echo "::error::A secret was inlined into the built bundle. Aborting deploy."
+            exit 1
+          fi
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

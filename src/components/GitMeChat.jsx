@@ -17,6 +17,11 @@ const MAX_HISTORY = 12;          // user + assistant turns kept in context
 const MAX_RESPONSE_TOKENS = 500; // cap on assistant reply
 const TEMPERATURE = 0.4;         // low → grounded, factual
 
+// Per-session rate limit — protects our OpenRouter quota from a single
+// visitor spamming the chat. Sliding window of RATE_WINDOW_MS.
+const RATE_MAX_REQUESTS = 8;
+const RATE_WINDOW_MS = 60_000;
+
 // HTTP header values must be ISO-8859-1 (Latin-1). Strip anything outside
 // printable ASCII so header construction never throws — em dashes, curly
 // quotes, and other Unicode we use freely in the UI would otherwise break.
@@ -37,15 +42,21 @@ const buildPortfolioBrief = (cfg, ghData) => {
     if (!cfg) return '';
     const lines = [];
 
+    // SECURITY / privacy — do NOT ship email, phone, LinkedIn URL, or the
+    // calendar meeting link into the third-party model. The model doesn't
+    // need PII to answer questions; if a visitor asks how to contact the
+    // owner, we tell it to point them at the on-page Contact section.
     lines.push(`# About ${cfg.name}`);
     lines.push(`Handle: ${cfg.handle}`);
     if (cfg.tagline) lines.push(`Tagline: ${cfg.tagline}`);
     if (cfg.location) lines.push(`Location: ${cfg.location}`);
     if (cfg.availability) lines.push(`Availability: ${cfg.availability}`);
     if (cfg.website) lines.push(`Website: ${cfg.website}`);
-    if (cfg.email) lines.push(`Email: ${cfg.email}`);
-    if (cfg.linkedin) lines.push(`LinkedIn: ${cfg.linkedin}`);
     if (cfg.github) lines.push(`GitHub: ${cfg.github}`);
+    lines.push(
+        'Contact details (email, LinkedIn, calendar link) are visible on the site itself — ' +
+        'refer visitors to the Contact section rather than quoting them.'
+    );
 
     if (cfg.bioShort || cfg.bioLong?.length) {
         lines.push('');
@@ -243,9 +254,36 @@ const GitMeChat = ({ data }) => {
         }
     }, [messages, isOpen]);
 
+    // In-memory sliding window of recent send timestamps.
+    // Not persisted — resets when the tab closes.
+    const rateStampsRef = useRef([]);
+
     const send = async (contentOverride) => {
         const raw = (contentOverride ?? input).trim();
         if (!raw || isLoading) return;
+
+        // Per-session rate limit — keeps a single visitor from burning
+        // through our OpenRouter quota.
+        const now = Date.now();
+        rateStampsRef.current = rateStampsRef.current.filter(
+            (t) => now - t < RATE_WINDOW_MS
+        );
+        if (rateStampsRef.current.length >= RATE_MAX_REQUESTS) {
+            const waitMs =
+                RATE_WINDOW_MS - (now - rateStampsRef.current[0]);
+            const waitSec = Math.max(1, Math.ceil(waitMs / 1000));
+            setMessages((prev) => [
+                ...prev,
+                { role: 'user', content: raw },
+                {
+                    role: 'assistant',
+                    content: `You're sending messages too quickly. Please wait ${waitSec}s and try again.`,
+                },
+            ]);
+            setInput('');
+            return;
+        }
+        rateStampsRef.current.push(now);
 
         const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY?.trim();
         if (!apiKey) {
