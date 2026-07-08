@@ -4,6 +4,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Pre-hydration theme swap (avoids FOUC when saved theme is "light") -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('gitme-theme');
+        var prefersLight =
+          window.matchMedia &&
+          window.matchMedia('(prefers-color-scheme: light)').matches;
+        var theme = saved || (prefersLight ? 'light' : 'dark');
+        var r = document.documentElement;
+        r.classList.remove('light', 'dark');
+        r.classList.add(theme);
+      } catch (e) { }
+    })();
+  </script>
   <meta name="description"
     content="GitMe - AI-Powered GitHub Profile Analyzer & Resume Builder. Visualize your developer impact, track contributions, and synthesize professional summaries for recruiters." />
   <meta name="keywords"

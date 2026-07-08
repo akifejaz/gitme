@@ -1,349 +1,804 @@
-import React, { useEffect, useState, useMemo, lazy, Suspense } from 'react';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-import ReactMarkdown from 'react-markdown';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
-    Users,
-    Building,
+    ArrowUpRight,
     GitPullRequest,
-    Calendar,
-    Code2,
-    FolderDot,
+    CheckCircle2,
+    Clock,
+    XCircle,
+    Mail,
+    Github,
+    Linkedin,
+    FileText,
+    MapPin,
+    Radio,
+    Terminal,
+    Code,
+    Download,
+    ChevronDown,
+    ChevronUp,
 } from 'lucide-react';
-import ContributionChart from '../components/ContributionChart';
 import userConfig from '../../userConfig';
+import Logo from '../components/Logo';
 
-// Markdown utilities imported normally for stability
+/* ------------------------------------------------------------------ */
+/*  Tiny presentational primitives                                     */
+/* ------------------------------------------------------------------ */
 
-const MarkdownLoader = () => (
-    <div className="flex items-center gap-3 text-sm text-github-text-secondary py-10 justify-center">
-        <div className="w-5 h-5 border-2 border-github-text-secondary/30 border-t-github-text-secondary rounded-full animate-spin" />
-        Loading markdown...
+const Prompt = ({ children }) => (
+    <span className="text-github-status-open select-none">{children}</span>
+);
+
+const SectionHeader = ({ id, label }) => (
+    <div className="flex items-baseline gap-3 mb-6 font-mono">
+        <Prompt>❯</Prompt>
+        <h2 id={id} className="text-sm uppercase tracking-[0.18em] text-github-text-secondary">
+            {label}
+        </h2>
+        <div className="flex-1 border-t border-dashed border-github-border/60 translate-y-[-2px]" />
     </div>
 );
 
-// --- Scrolling marquee wrapper ---
-const Marquee = ({ children, speed = 30 }) => {
-    // If few children, repeat them to ensure seamless overflow
-    const items = Array.isArray(children) ? children : [children];
-    const repeated = items.length < 10 ? [...items, ...items, ...items] : items;
+const Chip = ({ children, tone = 'default' }) => {
+    const tones = {
+        default:
+            'border-github-border text-github-text-secondary bg-github-bg-secondary/60',
+        accent:
+            'border-github-status-open/30 text-github-status-open bg-github-status-open/5',
+        purple:
+            'border-github-status-merged/30 text-github-status-merged bg-github-status-merged/5',
+    };
+    return (
+        <span
+            className={`inline-flex items-center px-2 py-0.5 text-[11px] font-mono border rounded-sm ${tones[tone]}`}
+        >
+            {children}
+        </span>
+    );
+};
+
+const BlinkingCursor = () => (
+    <span
+        aria-hidden="true"
+        className="inline-block w-[10px] h-[1.05em] translate-y-[2px] ml-1 bg-github-status-open animate-pulse"
+    />
+);
+
+/* ------------------------------------------------------------------ */
+/*  Recent GitHub activity strip                                       */
+/* ------------------------------------------------------------------ */
+
+const stateIcon = (s) => {
+    if (s === 'MERGED')
+        return <CheckCircle2 size={12} className="text-github-status-merged" />;
+    if (s === 'OPEN')
+        return <Clock size={12} className="text-github-status-open" />;
+    return <XCircle size={12} className="text-github-status-closed" />;
+};
+
+const ACTIVITY_TOTAL = 4;   // items to show in the strip
+const ACTIVITY_PER_REPO = 2; // cap per repo → forces ≥ 2 unique repos when possible
+
+const RecentActivity = ({ data }) => {
+    const items = useMemo(() => {
+        const prs = (data?.pullRequests?.nodes || []).map((n) => ({
+            ...n,
+            kind: 'PR',
+        }));
+        const issues = (data?.issues?.nodes || []).map((n) => ({
+            ...n,
+            kind: 'Issue',
+        }));
+        const sorted = [...prs, ...issues]
+            .filter((x) => x?.createdAt)
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        // First pass: diversify by capping per-repo. This guarantees at least
+        // 2 unique repos in the result whenever the user has activity in 2+.
+        const perRepo = {};
+        const picked = [];
+        const pickedUrls = new Set();
+        for (const item of sorted) {
+            const repo = item.repository?.nameWithOwner || '__unknown__';
+            if ((perRepo[repo] || 0) < ACTIVITY_PER_REPO) {
+                picked.push(item);
+                pickedUrls.add(item.url);
+                perRepo[repo] = (perRepo[repo] || 0) + 1;
+            }
+            if (picked.length >= ACTIVITY_TOTAL) break;
+        }
+        // Second pass: fill any remaining slots (edge case — only 1 repo has
+        // any activity in the fetched window).
+        if (picked.length < ACTIVITY_TOTAL) {
+            for (const item of sorted) {
+                if (!pickedUrls.has(item.url)) {
+                    picked.push(item);
+                    pickedUrls.add(item.url);
+                    if (picked.length >= ACTIVITY_TOTAL) break;
+                }
+            }
+        }
+        return picked;
+    }, [data]);
+
+    if (!items.length) return null;
 
     return (
-        <div className="overflow-hidden relative w-full group">
-            <div
-                className="flex w-fit animate-marquee hover:pause-marquee"
-                style={{ animationDuration: `${speed}s` }}
-            >
-                <div className="flex gap-4 px-2 items-center">
-                    {repeated}
-                </div>
-                <div className="flex gap-4 px-2 items-center">
-                    {repeated}
-                </div>
-            </div>
+        <div className="grid gap-2">
+            {items.map((it) => (
+                <a
+                    key={it.url}
+                    href={it.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-start gap-3 px-3 py-2 border border-github-border/60 rounded-sm bg-github-bg-secondary/40 hover:border-github-status-open/40 hover:bg-github-bg-secondary transition-colors"
+                >
+                    <span className="mt-1 shrink-0">{stateIcon(it.state)}</span>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 text-[11px] font-mono text-github-text-secondary">
+                            <span>{it.repository?.nameWithOwner}</span>
+                            <span className="opacity-40">·</span>
+                            <span>{it.kind}</span>
+                        </div>
+                        <div className="text-[13.5px] text-github-text truncate group-hover:text-github-text-link">
+                            {it.title}
+                        </div>
+                    </div>
+                    <ArrowUpRight
+                        size={14}
+                        className="mt-1 shrink-0 text-github-text-secondary/50 group-hover:text-github-status-open transition-colors"
+                    />
+                </a>
+            ))}
         </div>
     );
 };
 
-const HomePage = ({ data, username, token, contributionData }) => {
-    const [readme, setReadme] = useState('');
-    const [readmeLoading, setReadmeLoading] = useState(true);
+/* ------------------------------------------------------------------ */
+/*  Uptime counter — "current focus" flavor                            */
+/* ------------------------------------------------------------------ */
 
-    // Fetch user README from username/username repo
+const useUptime = () => {
+    const [now, setNow] = useState(() => new Date());
     useEffect(() => {
-        const fetchReadme = async () => {
-            setReadmeLoading(true);
-            try {
-                const res = await fetch(`https://api.github.com/repos/${username}/${username}/readme`, {
-                    headers: { Authorization: `bearer ${token}`, Accept: 'application/vnd.github.v3.raw' },
-                });
-                if (res.ok) {
-                    const text = await res.text();
-                    setReadme(text);
-                } else {
-                    setReadme('');
-                }
-            } catch {
-                setReadme('');
-            } finally {
-                setReadmeLoading(false);
-            }
-        };
-        if (username && token) fetchReadme();
-    }, [username, token]);
+        const t = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(t);
+    }, []);
+    // hh:mm:ss UTC — reads like a system clock, no PII
+    return now.toISOString().slice(11, 19);
+};
 
-    // Extract unique organizations from contributions
-    const contributionDetails = useMemo(() => {
-        if (!data) return { orgs: [], repos: [] };
-        const orgsSet = new Set();
-        const reposSet = new Set();
-        const allNodes = [
-            ...(data.pullRequests?.nodes || []),
-            ...(data.issues?.nodes || []),
-            ...(data.repositoryDiscussions?.nodes || []),
-        ];
+/* ------------------------------------------------------------------ */
+/*  Page                                                               */
+/* ------------------------------------------------------------------ */
 
-        allNodes.forEach((n) => {
-            const parts = n.repository.nameWithOwner.split('/');
-            const owner = parts[0];
-            if (owner.toLowerCase() !== username.toLowerCase()) {
-                orgsSet.add(owner);
-            }
-            reposSet.add(n.repository.nameWithOwner);
-        });
+const PUBS_DEFAULT = 4;
+const BLOGS_DEFAULT = 3;
 
-        return {
-            orgs: Array.from(orgsSet),
-            repos: Array.from(reposSet)
-        };
-    }, [data, username]);
+const HomePage = ({ data }) => {
+    const uptime = useUptime();
+    const avatarUrl = data?.avatarUrl || `https://github.com/${userConfig.handle}.png`;
+    const resumeUrl = `${import.meta.env.BASE_URL}cv/${userConfig.cvUsername}.pdf`;
 
-    // Extract unique languages with colors
-    const languages = useMemo(() => {
-        if (!data) return [];
-        const langMap = {};
-        const allNodes = [
-            ...(data.pullRequests?.nodes || []),
-            ...(data.issues?.nodes || []),
-            ...(data.repositoryDiscussions?.nodes || []),
-        ];
-        allNodes.forEach((n) => {
-            const lang = n.repository.primaryLanguage;
-            if (lang && !langMap[lang.name]) {
-                langMap[lang.name] = lang.color || '#8b949e';
-            }
-        });
-        return Object.entries(langMap).map(([name, color]) => ({ name, color }));
-    }, [data]);
+    const [pubsExpanded, setPubsExpanded] = useState(false);
+    const [blogsExpanded, setBlogsExpanded] = useState(false);
 
-    // Stats
-    const totalPRs = data?.pullRequests?.nodes?.length || 0;
-    const mergedPRs = data?.pullRequests?.nodes?.filter((n) => n.state === 'MERGED').length || 0;
+    const allPublications = userConfig.publications || [];
+    const allBlogs = userConfig.blogs || [];
+    const visiblePublications = pubsExpanded
+        ? allPublications
+        : allPublications.slice(0, PUBS_DEFAULT);
+    const visibleBlogs = blogsExpanded
+        ? allBlogs
+        : allBlogs.slice(0, BLOGS_DEFAULT);
 
     return (
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-6">
-            <div className="grid grid-cols-1 lg:grid-cols-[296px_1fr] gap-8">
-                {/* ─── LEFT SIDEBAR ────────────────────────────────────────────────── */}
-                <aside className="flex flex-col gap-4">
-                    {/* Avatar */}
-                    <div className="relative group">
-                        <img
-                            src={data.avatarUrl}
-                            alt={data.name}
-                            className="w-full aspect-square rounded-full border border-github-border z-10 relative"
-                        />
-                        <div className="absolute right-0 bottom-6 w-10 h-10 bg-github-bg border border-github-border rounded-full flex items-center justify-center text-lg shadow-md z-20 group-hover:scale-110 transition-transform">
-                            🔥
-                        </div>
-                    </div>
+        <div className="min-h-screen bg-github-bg text-github-text">
+            {/* Subtle scanline / grid background — flips with theme */}
+            <div
+                aria-hidden="true"
+                className="fixed inset-0 pointer-events-none opacity-[0.045]"
+                style={{
+                    backgroundImage:
+                        'linear-gradient(rgb(var(--gh-grid)) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--gh-grid)) 1px, transparent 1px)',
+                    backgroundSize: '32px 32px',
+                }}
+            />
 
-                    {/* Name / Username */}
-                    <div className="py-1">
-                        <h1 className="github-name font-bold text-github-text tracking-tight">
-                            {data.name || username}
+            <div className="relative max-w-5xl mx-auto px-5 sm:px-8 lg:px-12 pt-10 pb-24">
+                {/* -------------------- HERO -------------------- */}
+                <div className="font-mono text-[12px] text-github-text-secondary flex items-center gap-2 mb-6">
+                    <Terminal size={13} className="text-github-status-open" />
+                    <span className="text-github-status-open">akif@systems</span>
+                    <span className="opacity-60">:</span>
+                    <span className="text-github-text-link">~/portfolio</span>
+                    <span className="opacity-60">$</span>
+                    <span>whoami</span>
+                    <span className="ml-auto hidden sm:inline opacity-60">uptime {uptime} UTC</span>
+                </div>
+
+                <header className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-8 items-start">
+                    <div>
+                        <h1 className="font-mono text-4xl sm:text-5xl font-semibold leading-[1.05] tracking-tight">
+                            {userConfig.name}
+                            <BlinkingCursor />
                         </h1>
-                        <p className="github-username text-github-text-secondary leading-6">{username}</p>
-                    </div>
+                        <p className="mt-3 text-github-text-secondary text-[15px] leading-relaxed">
+                            {userConfig.tagline}
+                        </p>
 
-                    {/* Bio */}
-                    {data.bio && (
-                        <p className="text-base text-github-text py-1 leading-snug">{data.bio}</p>
-                    )}
+                        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] font-mono text-github-text-secondary">
+                            <span className="flex items-center gap-1.5">
+                                <MapPin size={12} /> {userConfig.location}
+                            </span>
+                            <span className="flex items-center gap-1.5 text-github-status-open">
+                                <Radio size={12} className="animate-pulse" />
+                                {userConfig.availability}
+                            </span>
+                        </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 w-full">
-                        <button className="flex-1 h-8 flex items-center justify-center text-xs font-semibold bg-github-bg-secondary border border-github-border rounded-md hover:bg-github-border/60 transition-all text-github-text">
-                            Follow
-                        </button>
-                        <a
-                            href={userConfig.meetingLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 h-8 flex items-center justify-center gap-1.5 bg-brand-action text-white text-xs font-bold rounded-md hover:brightness-110 transition-all shadow-md shadow-brand-action/20"
-                        >
-                            <Calendar size={14} />
-                            Book Meeting
-                        </a>
-                    </div>
-
-                    {/* Followers / Following */}
-                    <div className="flex items-center gap-1 text-sm text-github-text-secondary hover:text-github-text-link cursor-pointer pt-1">
-                        <Users size={16} className="text-github-text-secondary mr-1" />
-                        <span className="font-bold text-github-text">{data.followers?.totalCount ?? '0'}</span>
-                        <span className="text-github-text-secondary">followers</span>
-                        <span className="mx-1 text-github-text-secondary">·</span>
-                        <span className="font-bold text-github-text">{data.following?.totalCount ?? '0'}</span>
-                        <span className="text-github-text-secondary">following</span>
-                    </div>
-
-                    {/* Company & Socials */}
-                    <div className="pt-2 mt-0.5 border-t border-github-border/40 flex flex-col gap-1.5">
-                        {data.company && (
-                            <div className="flex items-center gap-2 text-sm text-github-text">
-                                <Building size={16} className="text-github-text-secondary shrink-0" />
-                                <span className="font-medium">{data.company}</span>
-                            </div>
-                        )}
-
-                        {/* Social Logos - Inline SVG for performance */}
-                        <div className="flex items-center gap-4 py-1">
-                            {/* GitHub - Official Silhouette */}
-                            <a href={userConfig.github} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
-                                <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                                </svg>
+                        <div className="mt-5 flex flex-wrap gap-2">
+                            <a
+                                href={userConfig.github}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-github-border rounded-sm hover:border-github-text-secondary hover:bg-github-bg-secondary transition-colors"
+                            >
+                                <Github size={13} /> github
                             </a>
-                            {/* LinkedIn - Official Blue Rounded Square */}
-                            <a href={userConfig.linkedin} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
-                                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-                                    <rect width="24" height="24" rx="4" fill="#0A66C2" />
-                                    <path d="M8 19V9H5v10h3zM6.5 7.732c1.016 0 1.842-.827 1.842-1.842A1.842 1.842 0 1 0 4.658 5.89c0 1.015.826 1.842 1.842 1.842zM19 19v-5.399c0-2.895-1.545-4.242-3.605-4.242-1.662 0-2.396.914-2.822 1.555V9h-3.04c.04 1 0 10 0 10h3.04v-5.392c0-.288.02-.577.106-.785.232-.576.758-1.173 1.644-1.173 1.159 0 1.621.884 1.621 2.181V19H19z" fill="white" />
-                                </svg>
+                            <a
+                                href={userConfig.linkedin}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-github-border rounded-sm hover:border-github-text-secondary hover:bg-github-bg-secondary transition-colors"
+                            >
+                                <Linkedin size={13} /> linkedin
                             </a>
-                            {/* Gmail - Official Detailed Envelope */}
-                            <a href={`mailto:${userConfig.email}`} className="hover:scale-110 transition-transform">
-                                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-                                    <path d="M22.5 3H1.5C.675 3 0 3.675 0 4.5v15c0 .825.675 1.5 1.5 1.5h21c.825 0 1.5-.675 1.5-1.5v-15c0-.825-.675-1.5-1.5-1.5z" fill="#EA4335" />
-                                    <path d="M24 4.5v15c0 .825-.675 1.5-1.5 1.5H21V7.125L12 12.75l-9-5.625V21H1.5c-.825 0-1.5-.675-1.5-1.5v-15C0 3.675.675 3 1.5 3H3l9 5.625L21 3h1.5C23.325 3 24 3.675 24 4.5z" fill="#EA4335" />
-                                    <path d="M21 7.125V21H3V7.125L12 12.75l9-5.625z" fill="#F2F2F2" />
-                                    <path d="M21 7.125L12 12.75V21h9V7.125z" fill="#E0E0E0" />
-                                    <path d="M21 3.375L12 9 3 3.375V4.5l9 5.625L21 4.5v-1.125z" fill="#C5221F" />
-                                </svg>
+                            <a
+                                href={`mailto:${userConfig.email}`}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-github-border rounded-sm hover:border-github-text-secondary hover:bg-github-bg-secondary transition-colors"
+                            >
+                                <Mail size={13} /> email
+                            </a>
+                            <a
+                                href={resumeUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-github-status-open/40 text-github-status-open rounded-sm hover:bg-github-status-open/10 transition-colors"
+                            >
+                                <FileText size={13} /> resume.pdf
                             </a>
                         </div>
                     </div>
-                </aside>
 
-                {/* ─── RIGHT MAIN CONTENT ──────────────────────────────────────────── */}
-                <main className="flex flex-col min-w-0">
+                    <div className="justify-self-start sm:justify-self-end">
+                        <div className="relative">
+                            <div className="absolute inset-0 border border-dashed border-github-status-open/40 rounded-full translate-x-1 translate-y-1" />
+                            <img
+                                src={avatarUrl}
+                                alt={userConfig.name}
+                                className="relative w-[110px] h-[110px] sm:w-[150px] sm:h-[150px] rounded-full object-cover border border-github-border bg-github-bg-secondary"
+                            />
+                        </div>
+                    </div>
+                </header>
 
+                {/* -------------------- ABOUT -------------------- */}
+                <section className="mt-14">
+                    <SectionHeader id="about" label="about" />
+                    <div className="space-y-4 text-[15.5px] leading-[1.7] text-github-text/95">
+                        {userConfig.bioLong.map((p, i) => (
+                            <p key={i}>{p}</p>
+                        ))}
+                    </div>
+                </section>
 
-                    <div className="flex flex-col gap-8">
-                        {/* README Card */}
-                        <div className="rounded-lg border border-github-border overflow-hidden bg-transparent shadow-sm mb-8">
-                            <div className="flex items-center justify-between px-4 py-3 bg-transparent border-b border-github-border">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-semibold text-github-text">{username}</span>
-                                    <span className="text-sm text-github-text-secondary">/ README.md</span>
+                {/* -------------------- SKILLS -------------------- */}
+                <section className="mt-14">
+                    <SectionHeader id="skills" label="skills" />
+                    <div
+                        className="grid gap-x-6 gap-y-5"
+                        style={{
+                            gridTemplateColumns:
+                                'repeat(auto-fit, minmax(220px, 1fr))',
+                        }}
+                    >
+                        {Object.entries(userConfig.stack).map(([group, items]) => (
+                            <div key={group} className="border-l-2 border-github-border pl-3">
+                                <div className="text-[10.5px] uppercase tracking-[0.2em] text-github-text-secondary font-mono mb-2">
+                                    {group}
                                 </div>
-                                <a
-                                    href={`https://github.com/${username}/${username}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-github-text-secondary hover:text-github-text-link transition-colors"
-                                    title="View Source"
-                                >
-                                    <GitPullRequest size={14} />
-                                </a>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {items.map((x) => (
+                                        <Chip key={x}>{x}</Chip>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="p-6 markdown-body">
-                                {readmeLoading ? (
-                                    <div className="flex items-center gap-3 text-sm text-github-text-secondary py-10 justify-center">
-                                        <div className="w-5 h-5 border-2 border-github-text-secondary/30 border-t-github-text-secondary rounded-full animate-spin" />
-                                        Loading rich profile...
+                        ))}
+                    </div>
+                </section>
+
+                {/* -------------------- EXPERIENCE -------------------- */}
+                <section className="mt-16">
+                    <SectionHeader id="experience" label="experience" />
+                    <ol className="space-y-6">
+                        {userConfig.experience.map((exp, i) => (
+                            <li
+                                key={i}
+                                className="grid grid-cols-1 sm:grid-cols-[130px_1fr] gap-2 sm:gap-6"
+                            >
+                                <div className="font-mono text-[12px] text-github-text-secondary sm:text-right pt-1">
+                                    {exp.period}
+                                </div>
+                                <div className="border-l border-github-border/60 pl-4 sm:pl-5">
+                                    <div className="flex items-start gap-3">
+                                        <Logo
+                                            logo={exp.logo}
+                                            logoDomain={exp.logoDomain}
+                                            name={exp.org}
+                                            size={40}
+                                            className="mt-0.5"
+                                        />
+                                        <div className="min-w-0">
+                                            <div className="text-[15.5px] font-medium text-github-text">
+                                                {exp.role}
+                                            </div>
+                                            <div className="text-[13.5px] text-github-text-link">
+                                                {exp.org}
+                                                <span className="text-github-text-secondary">
+                                                    {' '}
+                                                    · {exp.location}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                ) : readme ? (
-                                    <div className="prose prose-invert max-w-none">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                                            {String(readme || '')}
-                                        </ReactMarkdown>
+                                    {exp.highlights?.length > 0 && (
+                                        <ul className="mt-3 space-y-1 text-[14px] text-github-text-secondary leading-relaxed">
+                                            {exp.highlights.map((h, j) => (
+                                                <li key={j} className="flex gap-2">
+                                                    <Prompt>—</Prompt>
+                                                    <span>{h}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            </li>
+                        ))}
+                    </ol>
+                </section>
+
+                {/* -------------------- EDUCATION -------------------- */}
+                <section className="mt-16">
+                    <SectionHeader id="education" label="education" />
+                    <ol className="space-y-4">
+                        {userConfig.education.map((ed, i) => (
+                            <li
+                                key={i}
+                                className="grid grid-cols-1 sm:grid-cols-[130px_1fr] gap-2 sm:gap-6"
+                            >
+                                <div className="font-mono text-[12px] text-github-text-secondary sm:text-right pt-1">
+                                    {ed.period}
+                                </div>
+                                <div className="border-l border-github-border/60 pl-4 sm:pl-5">
+                                    <div className="flex items-start gap-3">
+                                        <Logo
+                                            logo={ed.logo}
+                                            logoDomain={ed.logoDomain}
+                                            name={ed.school}
+                                            size={40}
+                                            className="mt-0.5"
+                                        />
+                                        <div className="min-w-0">
+                                            <div className="text-[15.5px] font-medium text-github-text">
+                                                {ed.school}
+                                            </div>
+                                            <div className="text-[13.5px] text-github-text-link">
+                                                {ed.degree}
+                                                {ed.location && (
+                                                    <span className="text-github-text-secondary">
+                                                        {' '}· {ed.location}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {ed.note && (
+                                                <p className="mt-1 text-[13.5px] text-github-text-secondary">
+                                                    {ed.note}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
-                                ) : (
-                                    <p className="text-sm text-github-text-secondary italic py-6 text-center">
-                                        No special README found for this profile.
-                                    </p>
+                                </div>
+                            </li>
+                        ))}
+                    </ol>
+                </section>
+
+                {/* -------------------- PROJECTS -------------------- */}
+                <section className="mt-16">
+                    <SectionHeader id="projects" label="selected work" />
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {userConfig.projects.map((p) => (
+                            <div
+                                key={p.name}
+                                className="group flex flex-col p-4 border border-github-border/70 rounded-sm bg-github-bg-secondary/40 hover:border-github-status-open/40 transition-colors"
+                            >
+                                <div>
+                                    {p.link ? (
+                                        <a
+                                            href={p.link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="font-mono text-[15px] text-github-text font-medium hover:text-github-status-open transition-colors inline-flex items-baseline gap-1"
+                                        >
+                                            {p.name}
+                                            <ArrowUpRight
+                                                size={13}
+                                                className="translate-y-[2px] opacity-60 group-hover:opacity-100"
+                                            />
+                                        </a>
+                                    ) : (
+                                        <div className="font-mono text-[15px] text-github-text font-medium">
+                                            {p.name}
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="mt-1.5 text-[13.5px] text-github-text-secondary leading-relaxed">
+                                    {p.description}
+                                </p>
+                                {p.tags?.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-1.5">
+                                        {p.tags.map((t) => (
+                                            <Chip key={t}>{t}</Chip>
+                                        ))}
+                                    </div>
+                                )}
+                                {(p.srcUrl || p.downloadUrl || p.prsUrl) && (
+                                    <div className="mt-auto pt-3">
+                                        <div className="pt-3 border-t border-dashed border-github-border/50 flex flex-wrap items-center gap-x-4 gap-y-2">
+                                            {p.srcUrl && (
+                                                <a
+                                                    href={p.srcUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 text-[12px] font-mono text-github-text-secondary hover:text-github-status-open transition-colors"
+                                                >
+                                                    <Code size={12} />
+                                                    <span>{p.srcLabel || 'source'}</span>
+                                                    <ArrowUpRight size={11} className="opacity-60" />
+                                                </a>
+                                            )}
+                                            {p.downloadUrl && (
+                                                <a
+                                                    href={p.downloadUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 text-[12px] font-mono text-github-text-secondary hover:text-github-status-open transition-colors"
+                                                >
+                                                    <Download size={12} />
+                                                    <span>{p.downloadLabel || 'download'}</span>
+                                                    <ArrowUpRight size={11} className="opacity-60" />
+                                                </a>
+                                            )}
+                                            {p.prsUrl && (
+                                                <a
+                                                    href={p.prsUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 text-[12px] font-mono text-github-text-secondary hover:text-github-status-open transition-colors"
+                                                >
+                                                    <GitPullRequest size={12} />
+                                                    <span>{p.prsLabel || 'my PRs'}</span>
+                                                    <ArrowUpRight size={11} className="opacity-60" />
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
-                        </div>
+                        ))}
+                    </div>
+                </section>
 
-
-
-
-                        {/* ─── CIRCULAR MARQUEE SECTIONS ──────────────────────────────────── */}
-                        <div className="grid grid-cols-1 gap-6">
-                            {/* Organizations */}
-                            {contributionDetails.orgs.length > 0 && (
-                                <div className="rounded-lg border border-github-border p-4 bg-github-bg-secondary/30">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-sm font-semibold text-github-text flex items-center gap-2">
-                                            <Building size={16} className="text-github-text-secondary" />
-                                            Collaborating Organizations
-                                        </h3>
-                                        <span className="text-[10px] font-bold text-github-text-secondary uppercase tracking-widest bg-github-bg px-2 py-0.5 rounded border border-github-border">
-                                            Total : {contributionDetails.orgs.length}
-                                        </span>
-                                    </div>
-                                    <Marquee speed={40}>
-                                        {contributionDetails.orgs.map((org) => (
-                                            <a
-                                                key={org}
-                                                href={`https://github.com/${org}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-2 px-4 py-2 bg-github-bg border border-github-border rounded-full text-sm text-github-text hover:border-github-text-link transition-all shrink-0"
-                                            >
-                                                <img src={`https://github.com/${org}.png?size=32`} alt={org} className="w-6 h-6 rounded-sm" loading="lazy" decoding="async" />
-                                                <span className="font-medium">{org}</span>
-                                            </a>
-                                        ))}
-                                    </Marquee>
-                                </div>
+                {/* -------------------- PUBLICATIONS -------------------- */}
+                {userConfig.publications?.length > 0 && (
+                    <section className="mt-16">
+                        <SectionHeader id="publications" label="publications" />
+                        <div className="flex items-center justify-between mb-3">
+                            <p className="text-[12.5px] text-github-text-secondary font-mono">
+                                <Prompt>$</Prompt> cat ~/papers/*.bib
+                            </p>
+                            {userConfig.profiles?.researchgate && (
+                                <a
+                                    href={userConfig.profiles.researchgate}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11.5px] font-mono text-github-text-link hover:underline"
+                                >
+                                    researchgate <ArrowUpRight size={12} />
+                                </a>
                             )}
-
-                            {/* Repositories & Languages */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="rounded-lg border border-github-border p-4 bg-github-bg-secondary/30">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-sm font-semibold text-github-text flex items-center gap-2">
-                                            <FolderDot size={16} className="text-github-text-secondary" />
-                                            Contribution Repos
-                                        </h3>
-                                        <span className="text-[10px] font-bold text-github-text-secondary uppercase tracking-widest bg-github-bg px-2 py-0.5 rounded border border-github-border">
-                                            Total : {contributionDetails.repos.length}
-                                        </span>
-                                    </div>
-                                    <Marquee speed={50}>
-                                        {contributionDetails.repos.map((repo) => (
-                                            <span key={repo} className="px-3 py-1.5 bg-github-bg border border-github-border rounded-md text-xs font-mono text-github-text-secondary shrink-0">
-                                                {repo.split('/')[1]}
-                                            </span>
-                                        ))}
-                                    </Marquee>
-                                </div>
-                                <div className="rounded-lg border border-github-border p-4 bg-github-bg-secondary/30">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-sm font-semibold text-github-text flex items-center gap-2">
-                                            <Code2 size={16} className="text-github-text-secondary" />
-                                            Stack & Languages
-                                        </h3>
-                                        <span className="text-[10px] font-bold text-github-text-secondary uppercase tracking-widest bg-github-bg px-2 py-0.5 rounded border border-github-border">
-                                            Total : {languages.length}
-                                        </span>
-                                    </div>
-                                    <Marquee speed={35}>
-                                        {languages.map((lang) => (
-                                            <span
-                                                key={lang.name}
-                                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-github-bg border border-github-border rounded-md text-sm text-github-text shrink-0"
-                                            >
-                                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: lang.color }} />
-                                                {lang.name}
-                                            </span>
-                                        ))}
-                                    </Marquee>
-                                </div>
-                            </div>
                         </div>
-
-                        {/* Contribution Chart */}
-                        {contributionData && (
-                            <div className="pt-4 border-t border-github-border">
-                                <h3 className="text-sm font-semibold text-github-text mb-4">Contribution Activity</h3>
-                                <ContributionChart contributionData={contributionData} />
+                        <ol className="space-y-4">
+                            {visiblePublications.map((p, i) => {
+                                const Wrapper = p.link ? 'a' : 'div';
+                                const wrapperProps = p.link
+                                    ? { href: p.link, target: '_blank', rel: 'noopener noreferrer' }
+                                    : {};
+                                return (
+                                    <li key={i}>
+                                        <Wrapper
+                                            {...wrapperProps}
+                                            className={`group grid grid-cols-1 sm:grid-cols-[130px_1fr] gap-1 sm:gap-6 ${p.link ? 'cursor-pointer' : ''
+                                                }`}
+                                        >
+                                            <div className="font-mono text-[12px] text-github-text-secondary sm:text-right pt-1">
+                                                {p.date}
+                                            </div>
+                                            <div className="border-l border-github-border/60 pl-4 sm:pl-5">
+                                                <div className={`text-[14.5px] text-github-text leading-snug ${p.link ? 'group-hover:text-github-text-link transition-colors' : ''
+                                                    }`}>
+                                                    {p.title}
+                                                    {p.link && (
+                                                        <ArrowUpRight
+                                                            size={13}
+                                                            className="inline-block ml-1 opacity-50 group-hover:opacity-100 -translate-y-[1px]"
+                                                        />
+                                                    )}
+                                                </div>
+                                                {(() => {
+                                                    const publishedIn =
+                                                        p.publishedIn ?? p.conference;
+                                                    const publishedInUrl =
+                                                        p.publishedInUrl ?? p.conferenceUrl;
+                                                    return (
+                                                        <div className="text-[12.5px] font-mono text-github-status-open mt-1">
+                                                            {p.venue}
+                                                            {publishedIn && (
+                                                                <>
+                                                                    <span className="text-github-text-secondary"> · </span>
+                                                                    {publishedInUrl ? (
+                                                                        <a
+                                                                            href={publishedInUrl}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                            className="text-github-text-link hover:underline"
+                                                                        >
+                                                                            {publishedIn}
+                                                                            <ArrowUpRight
+                                                                                size={11}
+                                                                                className="inline-block ml-0.5 -translate-y-[1px] opacity-70"
+                                                                            />
+                                                                        </a>
+                                                                    ) : (
+                                                                        <span className="text-github-text">
+                                                                            {publishedIn}
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
+                                                {p.authors && (
+                                                    <div className="text-[12.5px] text-github-text-secondary mt-1">
+                                                        {p.authors}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </Wrapper>
+                                    </li>
+                                );
+                            })}
+                        </ol>
+                        {allPublications.length > PUBS_DEFAULT && (
+                            <div className="mt-5 flex justify-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setPubsExpanded((v) => !v)}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-github-border bg-github-bg-secondary/60 text-[13.5px] font-mono text-github-text hover:border-github-status-open/50 hover:text-github-status-open hover:bg-github-status-open/5 transition-colors"
+                                >
+                                    {pubsExpanded ? (
+                                        <>
+                                            <ChevronUp size={16} />
+                                            <span>less</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ChevronDown size={16} />
+                                            <span>more</span>
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         )}
+                    </section>
+                )}
+
+                {/* -------------------- BLOGS / WRITINGS -------------------- */}
+                {userConfig.blogs?.length > 0 && (
+                    <section className="mt-16">
+                        <SectionHeader id="blogs" label="writings & blogs" />
+                        <div className="flex items-center justify-between mb-3">
+                            <p className="text-[12.5px] text-github-text-secondary font-mono">
+                                <Prompt>$</Prompt> ls ~/blog/ | sort -r
+                            </p>
+                            {userConfig.profiles?.medium && (
+                                <a
+                                    href={userConfig.profiles.medium}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11.5px] font-mono text-github-text-link hover:underline"
+                                >
+                                    medium <ArrowUpRight size={12} />
+                                </a>
+                            )}
+                        </div>
+                        <ul className="space-y-5">
+                            {visibleBlogs.map((w, i) => (
+                                <li key={i}>
+                                    {w.link ? (
+                                        <a
+                                            href={w.link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="group block"
+                                        >
+                                            <div className="text-[15px] text-github-text group-hover:text-github-text-link transition-colors leading-snug">
+                                                {w.title}
+                                                <ArrowUpRight
+                                                    size={13}
+                                                    className="inline-block ml-1 opacity-50 group-hover:opacity-100 -translate-y-[1px]"
+                                                />
+                                            </div>
+                                            {w.summary && (
+                                                <div className="text-[13px] text-github-text-secondary mt-1 leading-relaxed">
+                                                    {w.summary}
+                                                </div>
+                                            )}
+                                            <div className="text-[11.5px] font-mono text-github-text-secondary/70 mt-1">
+                                                {w.date}
+                                            </div>
+                                        </a>
+                                    ) : (
+                                        <div>
+                                            <div className="text-[15px] text-github-text leading-snug">
+                                                {w.title}
+                                            </div>
+                                            {w.summary && (
+                                                <div className="text-[13px] text-github-text-secondary mt-1 leading-relaxed">
+                                                    {w.summary}
+                                                </div>
+                                            )}
+                                            <div className="text-[11.5px] font-mono text-github-text-secondary/70 mt-1">
+                                                {w.date}
+                                            </div>
+                                        </div>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                        {allBlogs.length > BLOGS_DEFAULT && (
+                            <div className="mt-5 flex justify-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setBlogsExpanded((v) => !v)}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-github-border bg-github-bg-secondary/60 text-[13.5px] font-mono text-github-text hover:border-github-status-open/50 hover:text-github-status-open hover:bg-github-status-open/5 transition-colors"
+                                >
+                                    {blogsExpanded ? (
+                                        <>
+                                            <ChevronUp size={16} />
+                                            <span>less</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ChevronDown size={16} />
+                                            <span>more</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                    </section>
+                )}
+
+                {/* -------------------- RECENT ACTIVITY -------------------- */}
+                {data && (
+                    <section className="mt-16">
+                        <SectionHeader id="now" label="recent activity" />
+                        <p className="text-[13px] text-github-text-secondary mb-4 font-mono">
+                            <Prompt>$</Prompt> git log --author={userConfig.handle} --recent
+                        </p>
+                        <RecentActivity data={data} />
+                        <div className="mt-4">
+                            <Link
+                                to="/profile"
+                                className="inline-flex items-center gap-1.5 text-[12.5px] font-mono text-github-text-link hover:underline"
+                            >
+                                see full contribution log <ArrowUpRight size={13} />
+                            </Link>
+                        </div>
+                    </section>
+                )}
+
+                {/* -------------------- ORGS -------------------- */}
+                <section className="mt-16">
+                    <SectionHeader id="orgs" label="contribut[ed/ing] to" />
+                    <div className="flex flex-wrap gap-2.5">
+                        {userConfig.orgs.map((o) => {
+                            const isString = typeof o === 'string';
+                            const org = isString ? { name: o } : o;
+                            const Wrapper = org.url ? 'a' : 'span';
+                            const wrapperProps = org.url
+                                ? {
+                                    href: org.url,
+                                    target: '_blank',
+                                    rel: 'noopener noreferrer',
+                                }
+                                : {};
+                            return (
+                                <Wrapper
+                                    key={org.name}
+                                    {...wrapperProps}
+                                    className={`group inline-flex items-center gap-2.5 pl-2 pr-3.5 py-2 border rounded-md bg-github-bg-secondary/60 border-github-border text-github-text-secondary transition-colors ${org.url
+                                        ? 'hover:border-github-status-open/50 hover:text-github-status-open hover:bg-github-status-open/5 cursor-pointer'
+                                        : ''
+                                        }`}
+                                >
+                                    <Logo
+                                        logo={org.logo}
+                                        logoDomain={org.logoDomain}
+                                        name={org.name}
+                                        size={26}
+                                    />
+                                    <span className="text-[13.5px] font-mono">
+                                        {org.name}
+                                    </span>
+                                    {org.url && (
+                                        <ArrowUpRight
+                                            size={13}
+                                            className="opacity-40 group-hover:opacity-100 -translate-y-[1px]"
+                                        />
+                                    )}
+                                </Wrapper>
+                            );
+                        })}
                     </div>
-                </main>
+                </section>
+
+                {/* -------------------- CONTACT -------------------- */}
+                <section className="mt-20 pt-8 border-t border-dashed border-github-border/60">
+                    <div className="font-mono text-[13px] text-github-text-secondary mb-3">
+                        <Prompt>❯</Prompt> ./contact --purpose=&quot;let&apos;s build something&quot;
+                    </div>
+                    <p className="text-[15px] text-github-text leading-relaxed max-w-lg">
+                        If you&apos;re working on RISC-V, kernels, RTOS, or agentic AI for
+                        systems software — I&apos;d love to talk.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                        <a
+                            href={`mailto:${userConfig.email}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-mono border border-github-status-open/40 text-github-status-open rounded-sm hover:bg-github-status-open/10 transition-colors"
+                        >
+                            <Mail size={13} /> {userConfig.email}
+                        </a>
+                        {userConfig.meetingLink && (
+                            <a
+                                href={userConfig.meetingLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-mono border border-github-border rounded-sm hover:border-github-text-secondary hover:bg-github-bg-secondary transition-colors"
+                            >
+                                book a slot <ArrowUpRight size={13} />
+                            </a>
+                        )}
+                    </div>
+                </section>
+
+                <footer className="mt-16 text-[11px] font-mono text-github-text-secondary/70">
+                    <Prompt>$</Prompt> exit 0
+                </footer>
             </div>
         </div>
     );

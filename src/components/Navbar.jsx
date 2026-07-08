@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LogOut, FileText } from 'lucide-react';
 import GithubLogo from './GithubLogo';
 import CVModal from './CVModal';
+import ThemeToggle from './ThemeToggle';
 import userConfig from '../../userConfig';
 
 const Navbar = ({ data, onLogout, username }) => {
@@ -55,6 +56,7 @@ const Navbar = ({ data, onLogout, username }) => {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    <ThemeToggle />
                     {data && (
                         <>
                             <button

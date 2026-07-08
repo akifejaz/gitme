@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 import GithubLogo from '../components/GithubLogo';
+import ThemeToggle from '../components/ThemeToggle';
 
 const LoginPage = ({ onLogin, autoLoggingIn }) => {
     const [token, setToken] = useState('');
@@ -39,7 +40,10 @@ const LoginPage = ({ onLogin, autoLoggingIn }) => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-github-bg-tertiary p-6">
+        <div className="relative flex flex-col items-center justify-center min-h-screen bg-github-bg-tertiary p-6">
+            <div className="absolute top-4 right-4">
+                <ThemeToggle />
+            </div>
             <div className="w-full max-w-sm">
                 <div className="flex justify-center mb-8">
                     <GithubLogo size={48} className="text-github-text" />

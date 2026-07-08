@@ -1,6 +1,7 @@
 import React from 'react';
 import GithubLogo from './GithubLogo';
 import { Heart } from 'lucide-react';
+import userConfig from '../../userConfig';
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
@@ -11,9 +12,26 @@ const Footer = () => {
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-2.5">
                         <GithubLogo size={18} className="text-github-text-secondary opacity-40 hover:opacity-100 transition-opacity cursor-pointer" />
-                        <p className="text-[12px] text-github-text-secondary/70">
-                            &copy; {currentYear} <span className="text-github-text-secondary font-semibold">GitMe</span>. Engineered for impact.
-                        </p>
+                        <div className="flex flex-col leading-tight">
+                            <p className="text-[12px] text-github-text-secondary/70">
+                                &copy; {currentYear}{' '}
+                                <span className="text-github-text-secondary font-semibold">
+                                    {userConfig.name || 'akifejaz'}
+                                </span>
+                            </p>
+                            <p className="text-[10px] text-github-text-secondary/50">
+                                Built on{' '}
+                                <a
+                                    href="https://github.com/akifejaz/gitme"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-github-text-secondary/70 hover:text-github-text-link transition-colors font-semibold"
+                                >
+                                    GitMe
+                                </a>
+                                . Engineered for impact.
+                            </p>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-6">
@@ -54,14 +72,6 @@ const Footer = () => {
                             <span className="text-github-text font-bold">Akif Ejaz</span>
                         </a>
                     </div>
-                </div>
-
-                <div className="mt-3 flex items-center justify-center md:justify-start gap-3 opacity-20 hover:opacity-40 transition-opacity select-none cursor-default">
-                    <span className="text-[8px] text-github-text-secondary uppercase tracking-[0.25em]">Vite 7</span>
-                    <span className="w-0.5 h-0.5 bg-github-text-secondary rounded-full" />
-                    <span className="text-[8px] text-github-text-secondary uppercase tracking-[0.25em]">React 18</span>
-                    <span className="w-0.5 h-0.5 bg-github-text-secondary rounded-full" />
-                    <span className="text-[8px] text-github-text-secondary uppercase tracking-[0.25em]">OpenRouter AI</span>
                 </div>
             </div>
         </footer>

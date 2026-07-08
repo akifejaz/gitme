@@ -2,18 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ------------------------------------------------------------------ */
+/*  Theme tokens — dark is the default; .light on <html> flips them.  */
+/*  Values are r g b triples so Tailwind can apply /<alpha-value>.    */
+/* ------------------------------------------------------------------ */
+:root,
+:root.dark {
+  --gh-bg: 13 17 23;
+  --gh-bg-secondary: 22 27 34;
+  --gh-bg-tertiary: 1 4 9;
+  --gh-border: 48 54 61;
+  --gh-border-muted: 33 38 45;
+  --gh-text: 201 209 217;
+  --gh-text-secondary: 139 148 158;
+  --gh-text-link: 88 166 255;
+  --gh-accent: 31 111 235;
+  --gh-accent-success: 35 134 54;
+  --gh-accent-danger: 218 54 51;
+  --gh-accent-purple: 137 87 229;
+  --gh-status-open: 63 185 80;
+  --gh-status-closed: 248 81 73;
+  --gh-status-merged: 163 113 247;
+  --gh-status-draft: 139 148 158;
+  --gh-grid: 201 209 217;
+}
+
+:root.light {
+  --gh-bg: 255 255 255;
+  --gh-bg-secondary: 246 248 250;
+  --gh-bg-tertiary: 234 238 242;
+  --gh-border: 208 215 222;
+  --gh-border-muted: 216 222 228;
+  --gh-text: 31 35 40;
+  --gh-text-secondary: 101 109 118;
+  --gh-text-link: 9 105 218;
+  --gh-accent: 9 105 218;
+  --gh-accent-success: 26 127 55;
+  --gh-accent-danger: 207 34 46;
+  --gh-accent-purple: 130 80 223;
+  --gh-status-open: 26 127 55;
+  --gh-status-closed: 207 34 46;
+  --gh-status-merged: 130 80 223;
+  --gh-status-draft: 101 109 118;
+  --gh-grid: 31 35 40;
+}
+
 :root {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+}
+
+:root.light {
+  color-scheme: light;
 }
 
 html,
 body,
 #root {
-  background-color: #0d1117;
-  color: #c9d1d9;
+  background-color: rgb(var(--gh-bg));
+  color: rgb(var(--gh-text));
   min-height: 100vh;
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 /* Custom scrollbar */
@@ -22,17 +73,17 @@ body,
 }
 
 ::-webkit-scrollbar-track {
-  background: #0d1117;
+  background: rgb(var(--gh-bg));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #30363d;
-  border: 3px solid #0d1117;
+  background: rgb(var(--gh-border));
+  border: 3px solid rgb(var(--gh-bg));
   border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #484f58;
+  background: rgb(var(--gh-text-secondary));
 }
 
 .no-scrollbar::-webkit-scrollbar {

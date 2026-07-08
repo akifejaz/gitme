@@ -60,35 +60,35 @@ export default {
       colors: {
         github: {
           bg: {
-            DEFAULT: '#0d1117',
-            secondary: '#161b22',
-            tertiary: '#010409'
+            DEFAULT: 'rgb(var(--gh-bg) / <alpha-value>)',
+            secondary: 'rgb(var(--gh-bg-secondary) / <alpha-value>)',
+            tertiary: 'rgb(var(--gh-bg-tertiary) / <alpha-value>)'
           },
           border: {
-            DEFAULT: '#30363d',
-            muted: '#21262d'
+            DEFAULT: 'rgb(var(--gh-border) / <alpha-value>)',
+            muted: 'rgb(var(--gh-border-muted) / <alpha-value>)'
           },
           text: {
-            DEFAULT: '#c9d1d9',
-            secondary: '#8b949e',
-            link: '#58a6ff'
+            DEFAULT: 'rgb(var(--gh-text) / <alpha-value>)',
+            secondary: 'rgb(var(--gh-text-secondary) / <alpha-value>)',
+            link: 'rgb(var(--gh-text-link) / <alpha-value>)'
           },
           accent: {
-            DEFAULT: '#1f6feb',
-            success: '#238636',
-            danger: '#da3633',
-            purple: '#8957e5'
+            DEFAULT: 'rgb(var(--gh-accent) / <alpha-value>)',
+            success: 'rgb(var(--gh-accent-success) / <alpha-value>)',
+            danger: 'rgb(var(--gh-accent-danger) / <alpha-value>)',
+            purple: 'rgb(var(--gh-accent-purple) / <alpha-value>)'
           },
           status: {
-            open: '#3fb950',
-            closed: '#f85149',
-            merged: '#a371f7',
-            draft: '#8b949e'
+            open: 'rgb(var(--gh-status-open) / <alpha-value>)',
+            closed: 'rgb(var(--gh-status-closed) / <alpha-value>)',
+            merged: 'rgb(var(--gh-status-merged) / <alpha-value>)',
+            draft: 'rgb(var(--gh-status-draft) / <alpha-value>)'
           }
         },
         brand: {
           action: '#06B6D4',
-          surface: '#161b22',
+          surface: 'rgb(var(--gh-bg-secondary) / <alpha-value>)',
           ai: '#8957e5'
         }
       }
