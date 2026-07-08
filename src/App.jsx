@@ -27,13 +27,8 @@ const App = () => {
   const [contributionData, setContributionData] = useState(null);
   const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(false);
 
-  // --- Automatic Login (LOCAL DEV ONLY) ---
-  // SECURITY: production builds must NOT bundle VITE_GITHUB_TOKEN. The CI
-  // workflow deliberately omits it. This block gates the whole auto-login
-  // path on `import.meta.env.DEV` so even if the vars leak through some
-  // other build, the token never gets read at runtime in production.
+  // --- Automatic Login ---
   useEffect(() => {
-    if (!import.meta.env.DEV) return;
     const autoUsername = import.meta.env.VITE_GITHUB_USERNAME;
     const autoToken = import.meta.env.VITE_GITHUB_TOKEN;
     if (!autoUsername || !autoToken || data || isAutoLoggingIn) return;
@@ -41,8 +36,7 @@ const App = () => {
     setIsAutoLoggingIn(true);
     handleLogin(autoUsername, autoToken)
       .catch(() => {
-        // Silent — invalid or expired dev token. User can fall back to
-        // the manual login form.
+
       })
       .finally(() => setIsAutoLoggingIn(false));
   }, []);
