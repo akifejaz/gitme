@@ -58,6 +58,8 @@ const userConfig = {
         {
             role: "Software Engineer II",
             org: "Xcelerium Inc.",
+            // DDG returns a placeholder for xcelerium.com — pin the real SVG mark instead.
+            logo: "https://xcelerium.com/wp-content/uploads/2025/09/x-favicon.svg",
             logoDomain: "xcelerium.com",
             period: "Mar 2023 — Feb 2025",
             location: "California, USA",
@@ -325,6 +327,8 @@ const userConfig = {
         {
             name: "Cloud-V",
             url: "https://cloud-v.co",
+            // DDG returns a placeholder for cloud-v.co — pin the real logo instead.
+            logo: "https://cloud-v.co/cloudv_website/static/src/img/logo.png",
             logoDomain: "cloud-v.co"
         },
         {
