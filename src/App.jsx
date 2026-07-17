@@ -4,11 +4,9 @@ import Navbar from './components/Navbar';
 import GitMeChat from './components/GitMeChat';
 import Footer from './components/Footer';
 
-// Idle-timeout for the in-memory GitHub PAT. After this many minutes of
-// inactivity, we wipe state so /profile stops working and an attacker who
-// obtains a foothold later (open laptop, XSS from a compromised dep) can't
-// find the token in memory. 15 minutes matches common enterprise policy.
-const IDLE_WIPE_MINUTES = 15;
+// Auto logout & clean user data, cache etc
+// reloading the site will auto-login again.
+const IDLE_WIPE_MINUTES = 6 * 60;
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const HomePage = lazy(() => import('./pages/HomePage'));
