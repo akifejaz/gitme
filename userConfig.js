@@ -253,6 +253,14 @@ const userConfig = {
     blogs: [
         {
             title:
+                "Porting seL4 to the Banana Pi BPI-F3",
+            date: "July 29, 2026",
+            summary:
+                "Bringing the formally verified microkernel to SpacemiT’s K1 RISC-V SoC, in four pull requests and one SoC manual that disagrees with itself.",
+            link: "https://medium.com/@akifejaz/porting-sel4-to-the-banana-pi-bpi-f3-1780e677b796"
+        },
+        {
+            title:
                 "Beginner's Guide to Linux Distros: Why They Multiply, and How to Know Which You're Using",
             date: "Aug 26, 2025",
             summary:
