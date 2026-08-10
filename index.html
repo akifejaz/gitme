@@ -48,52 +48,30 @@
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://github.com/yourusername/gitme" />
+  <meta property="og:url" content="https://akifejaz.github.io/gitme/" />
   <meta property="og:title" content="GitMe | AI-Powered GitHub Profile Analyzer" />
   <meta property="og:description"
     content="Detailed visualization of your GitHub contributions, AI-synthesized professional summaries, and an integrated CV viewer." />
   <meta property="og:image"
-    content="https://raw.githubusercontent.com/yourusername/gitme/main/public/gitme_banner.png" />
+    content="https://akifejaz.github.io/gitme/gitme_banner.png" />
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:url" content="https://github.com/yourusername/gitme" />
+  <meta property="twitter:url" content="https://akifejaz.github.io/gitme/" />
   <meta property="twitter:title" content="GitMe | AI-Powered GitHub Profile Analyzer" />
   <meta property="twitter:description"
     content="Visualize your developer impact and synthesize professional summaries with AI." />
   <meta property="twitter:image"
-    content="https://raw.githubusercontent.com/yourusername/gitme/main/public/gitme_banner.png" />
+    content="https://akifejaz.github.io/gitme/gitme_banner.png" />
 
   <title>GitMe | AI-Powered GitHub Profile Analyzer & Impact Dashboard</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://api.github.com" />
   <link rel="dns-prefetch" href="https://api.github.com" />
-  <script type="text/javascript">
-    // Single Page Apps for GitHub Pages
-    // https://github.com/rafgraph/spa-github-pages
-    // Copyright (c) 2016 Rafael Pedicini, licensed under the MIT License
-    // ----------------------------------------------------------------------
-    // This script checks to see if a redirect is present in the query string,
-    // converts it back into the correct url and adds it to the
-    // browser's history using window.history.replaceState(...),
-    // which will cause the browser to refresh the page without losing
-    // the history objects.
-    // ----------------------------------------------------------------------
-    (function (l) {
-      if (l.search[1] === '/') {
-        var decoded = l.search.slice(1).split('&').map(function (s) {
-          return s.replace(/~and~/g, '&')
-        }).filter(function (v) {
-          return v.indexOf('p=/') === 0
-        })[0];
-        if (decoded !== undefined) {
-          window.history.replaceState(null, null,
-            l.pathname.slice(0, -1) + decoded.slice(3) + l.hash
-          );
-        }
-      }
-    }(window.location))
-  </script>
+  <!-- SPA deep-link restore. External file so the CSP can keep
+       script-src 'self' (no 'unsafe-inline'). Bare relative path — Vite
+       adds the base prefix exactly once for both dev and production. -->
+  <script src="spa-redirect.js"></script>
 </head>
 
 <body>

@@ -18,7 +18,7 @@ import react from '@vitejs/plugin-react'
  *  3. `server.fs.strict: true` + `server.fs.deny`
  *     Vite already blocks `.env` / dotfiles, but we widen the deny list to
  *     also cover project docs an attacker with LAN access would use for
- *     reconnaissance (llm.txt, README, package.json, scripts/**).
+ *     reconnaissance (llm.txt, README, package.json, config files).
  */
 export default defineConfig({
   plugins: [react()],
@@ -51,8 +51,6 @@ export default defineConfig({
         '**/LICENSE',
         'SECURITY.md',
         '**/SECURITY.md',
-        'scripts/**',
-        '**/scripts/**',
         '.github/**',
         '**/.github/**',
         'package.json',
@@ -79,7 +77,6 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'markdown': ['react-markdown', 'remark-gfm', 'rehype-raw'],
           'lucide': ['lucide-react'],
         },
       },

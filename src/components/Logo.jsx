@@ -29,7 +29,7 @@ const Logo = ({ logo, logoDomain, name = '', size = 40, className = '' }) => {
     if (logo) candidates.push(logo);
     if (logoDomain) {
         const d = encodeURIComponent(logoDomain);
-        candidates.push(`https://icons.duckduckgo.com/ip3/${logoDomain}.ico`);
+        candidates.push(`https://icons.duckduckgo.com/ip3/${d}.ico`);
         candidates.push(`https://www.google.com/s2/favicons?domain=${d}&sz=128`);
     }
 

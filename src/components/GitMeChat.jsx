@@ -16,6 +16,12 @@ const MODEL_FALLBACKS = [
 const MAX_HISTORY = 12;          // user + assistant turns kept in context
 const MAX_RESPONSE_TOKENS = 500; // cap on assistant reply
 const TEMPERATURE = 0.4;         // low → grounded, factual
+const TEASER_DELAY_MS = 2500;    // delay before the "ask me" teaser appears
+
+// How many recent GitHub items to fold into the model's context brief.
+const BRIEF_PR_COUNT = 10;
+const BRIEF_ISSUE_COUNT = 5;
+const BRIEF_DISCUSSION_COUNT = 5;
 
 // Per-session rate limit — protects our OpenRouter quota from a single
 // visitor spamming the chat. Sliding window of RATE_WINDOW_MS.
@@ -139,9 +145,9 @@ const buildPortfolioBrief = (cfg, ghData) => {
 
     // GitHub live data — only recent titles for context, no giant blobs.
     if (ghData) {
-        const prs = (ghData.pullRequests?.nodes || []).slice(0, 10);
-        const issues = (ghData.issues?.nodes || []).slice(0, 5);
-        const discussions = (ghData.repositoryDiscussions?.nodes || []).slice(0, 5);
+        const prs = (ghData.pullRequests?.nodes || []).slice(0, BRIEF_PR_COUNT);
+        const issues = (ghData.issues?.nodes || []).slice(0, BRIEF_ISSUE_COUNT);
+        const discussions = (ghData.repositoryDiscussions?.nodes || []).slice(0, BRIEF_DISCUSSION_COUNT);
         if (prs.length || issues.length || discussions.length) {
             lines.push('');
             lines.push('## Recent GitHub activity');
@@ -211,6 +217,11 @@ const suggestionsFor = (name) => [
     'Show me recent publications.',
 ];
 
+// Generic, visitor-facing failure text. Technical detail (missing env var,
+// upstream status) goes to console.warn — never into the chat bubble.
+const GENERIC_UNAVAILABLE =
+    "The assistant is unavailable right now. Please try again later.";
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -221,7 +232,13 @@ const GitMeChat = ({ data }) => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
+    const inputRef = useRef(null);
     const [showTeaser, setShowTeaser] = useState(false);
+    // Once the visitor dismisses the teaser, never re-arm it this session.
+    const teaserDismissedRef = useRef(false);
+    // Aborts the in-flight OpenRouter request on unmount so we stop burning
+    // quota (and never setState after unmount).
+    const abortRef = useRef(null);
 
     const name = userConfig.name || data?.name || 'this developer';
 
@@ -237,11 +254,15 @@ const GitMeChat = ({ data }) => {
     );
 
     useEffect(() => {
+        if (teaserDismissedRef.current) return;
         const timer = setTimeout(() => {
-            if (!isOpen) setShowTeaser(true);
-        }, 2500);
+            if (!isOpen && !teaserDismissedRef.current) setShowTeaser(true);
+        }, TEASER_DELAY_MS);
         return () => clearTimeout(timer);
     }, [isOpen]);
+
+    // Abort any in-flight request when the component unmounts (logout/idle wipe).
+    useEffect(() => () => abortRef.current?.abort(), []);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -254,11 +275,27 @@ const GitMeChat = ({ data }) => {
         }
     }, [messages, isOpen]);
 
+    // Focus the input on open; close on Escape.
+    useEffect(() => {
+        if (!isOpen) return;
+        inputRef.current?.focus();
+        const onKey = (e) => {
+            if (e.key === 'Escape') setIsOpen(false);
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isOpen]);
+
     // In-memory sliding window of recent send timestamps.
     // Not persisted — resets when the tab closes.
     const rateStampsRef = useRef([]);
 
-    const send = async (contentOverride) => {
+    const dismissTeaser = () => {
+        teaserDismissedRef.current = true;
+        setShowTeaser(false);
+    };
+
+    const handleSend = async (contentOverride) => {
         const raw = (contentOverride ?? input).trim();
         if (!raw || isLoading) return;
 
@@ -272,14 +309,16 @@ const GitMeChat = ({ data }) => {
             const waitMs =
                 RATE_WINDOW_MS - (now - rateStampsRef.current[0]);
             const waitSec = Math.max(1, Math.ceil(waitMs / 1000));
-            setMessages((prev) => [
-                ...prev,
-                { role: 'user', content: raw },
-                {
-                    role: 'assistant',
-                    content: `You're sending messages too quickly. Please wait ${waitSec}s and try again.`,
-                },
-            ]);
+            setMessages((prev) =>
+                [
+                    ...prev,
+                    { role: 'user', content: raw },
+                    {
+                        role: 'assistant',
+                        content: `You're sending messages too quickly. Please wait ${waitSec}s and try again.`,
+                    },
+                ].slice(-MAX_HISTORY)
+            );
             setInput('');
             return;
         }
@@ -287,15 +326,14 @@ const GitMeChat = ({ data }) => {
 
         const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY?.trim();
         if (!apiKey) {
-            setMessages((prev) => [
-                ...prev,
-                { role: 'user', content: raw },
-                {
-                    role: 'assistant',
-                    content:
-                        "Chat isn't configured — VITE_OPENROUTER_API_KEY is missing. Add it to your .env file and reload.",
-                },
-            ]);
+            console.warn('GitMeChat: VITE_OPENROUTER_API_KEY is not set — chat disabled.');
+            setMessages((prev) =>
+                [
+                    ...prev,
+                    { role: 'user', content: raw },
+                    { role: 'assistant', content: GENERIC_UNAVAILABLE },
+                ].slice(-MAX_HISTORY)
+            );
             setInput('');
             return;
         }
@@ -306,6 +344,9 @@ const GitMeChat = ({ data }) => {
         setInput('');
         setIsLoading(true);
 
+        const controller = new AbortController();
+        abortRef.current = controller;
+
         try {
             let answer = null;
             let lastError = null;
@@ -315,6 +356,7 @@ const GitMeChat = ({ data }) => {
                     'https://openrouter.ai/api/v1/chat/completions',
                     {
                         method: 'POST',
+                        signal: controller.signal,
                         headers: {
                             'Content-Type': 'application/json',
                             Authorization: `Bearer ${apiKey}`,
@@ -364,45 +406,37 @@ const GitMeChat = ({ data }) => {
                     continue;
                 }
 
-                // Only auth errors are truly fatal for every model.
+                // Auth errors are fatal for every model.
                 if (status === 401) {
-                    throw new Error(
-                        'The OpenRouter API key was rejected. Check VITE_OPENROUTER_API_KEY.'
-                    );
+                    throw new Error('auth-rejected');
                 }
                 throw new Error(`Upstream error (${status}): ${upstream || 'unknown'}`);
             }
 
             if (!answer) {
-                throw (
-                    lastError ||
-                    new Error(
-                        'No fallback model succeeded. Set VITE_OPENROUTER_MODEL to a model you can access.'
-                    )
-                );
+                throw lastError || new Error('No fallback model succeeded.');
             }
 
             setMessages((prev) =>
                 [...prev, { role: 'assistant', content: answer }].slice(-MAX_HISTORY)
             );
         } catch (err) {
-            // Show a friendly message in the chat window instead of a raw
-            // stack trace. Real user-facing text only — no plumbing details.
-            const friendly =
-                err?.message && /API key|credits|rate|OpenRouter/i.test(err.message)
-                    ? err.message
-                    : "I couldn't reach the assistant right now. Please try again in a moment.";
+            // Component unmounted mid-request (logout/idle wipe) — drop silently.
+            if (err?.name === 'AbortError') return;
+            // Log the technical detail; show the visitor a generic message only.
+            console.warn('GitMeChat send failed:', err?.message || err);
             setMessages((prev) =>
-                [...prev, { role: 'assistant', content: friendly }].slice(-MAX_HISTORY)
+                [...prev, { role: 'assistant', content: GENERIC_UNAVAILABLE }].slice(-MAX_HISTORY)
             );
         } finally {
+            if (abortRef.current === controller) abortRef.current = null;
             setIsLoading(false);
         }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        send();
+        handleSend();
     };
 
     if (!data) return null;
@@ -420,9 +454,10 @@ const GitMeChat = ({ data }) => {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                setShowTeaser(false);
+                                dismissTeaser();
                             }}
                             className="ml-1 hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                            aria-label="Dismiss"
                         >
                             <X size={12} />
                         </button>
@@ -435,7 +470,7 @@ const GitMeChat = ({ data }) => {
             <button
                 onClick={() => {
                     setIsOpen(!isOpen);
-                    setShowTeaser(false);
+                    dismissTeaser();
                 }}
                 className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all transform hover:scale-110 active:scale-95 border-2 border-white/10 ${isOpen
                     ? 'bg-github-status-closed text-white hover:rotate-90'
@@ -448,14 +483,18 @@ const GitMeChat = ({ data }) => {
 
             {/* Chat Window */}
             {isOpen && (
-                <div className="absolute bottom-16 right-0 w-[92vw] max-w-[400px] h-[540px] bg-brand-surface/95 backdrop-blur-md rounded-2xl shadow-2xl border border-brand-ai/30 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div
+                    className="absolute bottom-16 right-0 w-[92vw] max-w-[400px] h-[540px] bg-brand-surface/95 backdrop-blur-md rounded-2xl shadow-2xl border border-brand-ai/30 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300"
+                    role="dialog"
+                    aria-label={`Chat: ask about ${name.split(' ')[0]}`}
+                >
                     {/* Header */}
                     <div className="p-4 border-b border-brand-ai/20 flex items-center gap-3 bg-gradient-to-r from-brand-ai/10 to-transparent">
                         <div className="w-8 h-8 rounded-full bg-brand-action flex items-center justify-center">
                             <Bot size={18} className="text-white" />
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                            <h3 className="text-sm font-bold text-github-text flex items-center gap-1.5">
                                 Ask about {name.split(' ')[0]}
                                 <Sparkles size={12} className="text-brand-action" />
                             </h3>
@@ -466,7 +505,12 @@ const GitMeChat = ({ data }) => {
                     </div>
 
                     {/* Messages Area */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+                    <div
+                        className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar"
+                        role="log"
+                        aria-live="polite"
+                        aria-label="Conversation"
+                    >
                         {messages.length === 0 && (
                             <div className="py-2 space-y-4">
                                 <p className="text-xs text-github-text-secondary leading-relaxed px-1">
@@ -478,7 +522,7 @@ const GitMeChat = ({ data }) => {
                                     {suggestions.map((q) => (
                                         <button
                                             key={q}
-                                            onClick={() => send(q)}
+                                            onClick={() => handleSend(q)}
                                             className="text-left text-[12px] px-3 py-2 rounded-lg border border-github-border/60 bg-github-bg-secondary/40 hover:border-brand-action/60 hover:bg-brand-action/5 text-github-text transition-colors"
                                         >
                                             {q}
@@ -524,10 +568,12 @@ const GitMeChat = ({ data }) => {
                     >
                         <div className="relative">
                             <input
+                                ref={inputRef}
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder={`Ask about ${name.split(' ')[0]}...`}
+                                aria-label={`Ask a question about ${name.split(' ')[0]}`}
                                 className="w-full bg-github-bg-tertiary border border-github-border rounded-xl px-4 py-2 text-sm text-github-text focus:outline-none focus:border-brand-action transition-colors pr-12"
                             />
                             <button

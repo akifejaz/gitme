@@ -4,8 +4,10 @@ import Navbar from './components/Navbar';
 import GitMeChat from './components/GitMeChat';
 import Footer from './components/Footer';
 
-// Auto logout & clean user data, cache etc
-// reloading the site will auto-login again.
+// Idle-timeout for the in-memory GitHub PAT. After this many minutes of
+// inactivity, we wipe state so /profile stops working and an attacker who
+// obtains a foothold later (open laptop, XSS from a compromised dep) can't
+// find the token in memory.
 const IDLE_WIPE_MINUTES = 6 * 60;
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -18,175 +20,182 @@ const PageLoader = () => (
   </div>
 );
 
+// Auto-login must be fast and must never hang. Bound every GitHub call so a
+// slow/unreachable API aborts instead of leaving the spinner up forever.
+const GITHUB_TIMEOUT_MS = 8000;
+
+// Shared GitHub GraphQL POST. One place owns the endpoint, auth header, and
+// JSON shape so the two call sites can't drift.
+const githubGraphql = async (token, query, variables) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GITHUB_TIMEOUT_MS);
+  try {
+    const response = await fetch('https://api.github.com/graphql', {
+      method: 'POST',
+      headers: { Authorization: `bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables }),
+      signal: controller.signal,
+    });
+    const json = await response.json().catch(() => ({}));
+    return { status: response.status, json };
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+// Lightweight identity query — this is all that gates the logged-in UI, so we
+// run it first and flip to signed-in the moment it returns (sub-second).
+const IDENTITY_QUERY = `
+  query($login: String!) {
+    user(login: $login) {
+      name
+      login
+      bio
+      avatarUrl
+      url
+      company
+      location
+      websiteUrl
+      followers { totalCount }
+      following { totalCount }
+      contributionsCollection {
+        contributionYears
+      }
+    }
+  }
+`;
+
+// Heavier activity lists — fetched in the background after login and merged in
+// when they arrive. The Overview and Contributions views render without them
+// and fill in once resolved, so login latency never waits on this.
+const ACTIVITY_QUERY = `
+  query($login: String!) {
+    user(login: $login) {
+      pullRequests(last: 50, orderBy: {field: CREATED_AT, direction: DESC}) {
+        nodes {
+          title url state createdAt
+          repository { ...RepoMeta }
+        }
+      }
+      issues(last: 50, orderBy: {field: CREATED_AT, direction: DESC}) {
+        nodes {
+          title url state createdAt
+          repository { ...RepoMeta }
+        }
+      }
+      repositoryDiscussions(last: 50) {
+        nodes {
+          title url createdAt
+          repository { ...RepoMeta }
+        }
+      }
+    }
+  }
+
+  fragment RepoMeta on Repository {
+    nameWithOwner
+    primaryLanguage { name color }
+    licenseInfo { name spdxId }
+  }
+`;
+
 const App = () => {
   const [token, setToken] = useState('');
   const [username, setUsername] = useState('');
   const [data, setData] = useState(null);
-  const [contributionData, setContributionData] = useState(null);
-  const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(false);
+  // Start "true" when auto-login creds are present so a deep-link / refresh to
+  // a protected route waits for login instead of redirecting away on first
+  // render (before the auto-login effect has even run).
+  const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(
+    () => Boolean(import.meta.env.VITE_GITHUB_USERNAME && import.meta.env.VITE_GITHUB_TOKEN)
+  );
+  // Message shown on the login page after a failed auto-login or an idle wipe.
+  const [loginNotice, setLoginNotice] = useState(null); // { text, tone } | null
 
-  // --- Automatic Login ---
-  useEffect(() => {
-    const autoUsername = import.meta.env.VITE_GITHUB_USERNAME;
-    const autoToken = import.meta.env.VITE_GITHUB_TOKEN;
-    if (!autoUsername || !autoToken || data || isAutoLoggingIn) return;
+  // Bumped on logout / new login so a slow in-flight login can't resurrect
+  // state after the user has signed out (or the idle timer fired).
+  const loginGenRef = useRef(0);
+  // Guards the one-shot auto-login against React.StrictMode's double-invoke.
+  const autoLoginTriedRef = useRef(false);
 
-    setIsAutoLoggingIn(true);
-    handleLogin(autoUsername, autoToken)
-      .catch(() => {
-
-      })
-      .finally(() => setIsAutoLoggingIn(false));
+  // Background fetch of the heavy activity lists, merged into `data` when it
+  // returns. Non-fatal: if it fails, Overview/Contributions just stay empty.
+  const loadActivity = useCallback(async (tok, user, gen) => {
+    try {
+      const { json } = await githubGraphql(tok, ACTIVITY_QUERY, { login: user });
+      if (gen !== loginGenRef.current) return; // superseded by logout/new login
+      const activity = json?.data?.user;
+      if (activity) setData((prev) => (prev ? { ...prev, ...activity } : prev));
+    } catch {
+      // Swallow — activity data is optional context, not a login blocker.
+    }
   }, []);
 
-
-
-  // --- Fetch contribution calendar for a given year (PARALLEL) ---
-  const fetchContributionCalendar = async (ghToken, loginName, years) => {
-    const calendars = {};
-
-    const today = new Date();
-    const lastYear = new Date();
-    lastYear.setFullYear(today.getFullYear() - 1);
-
-    const periods = [
-      { id: 'Last Year', from: lastYear.toISOString(), to: today.toISOString() },
-      ...years.map(y => ({
-        id: y.toString(),
-        from: `${y}-01-01T00:00:00Z`,
-        to: `${y}-12-31T23:59:59Z`
-      }))
-    ];
-
-    const fetchPeriod = async (period) => {
-      const query = `
-        query($login: String!, $from: DateTime!, $to: DateTime!) {
-          user(login: $login) {
-            contributionsCollection(from: $from, to: $to) {
-              contributionCalendar {
-                totalContributions
-                weeks {
-                  contributionDays {
-                    contributionCount
-                    date
-                    color
-                  }
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      try {
-        const response = await fetch('https://api.github.com/graphql', {
-          method: 'POST',
-          headers: { Authorization: `bearer ${ghToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query, variables: { login: loginName, from: period.from, to: period.to } }),
-        });
-        const result = await response.json();
-        if (result.data?.user?.contributionsCollection?.contributionCalendar) {
-          return { id: period.id, calendar: result.data.user.contributionsCollection.contributionCalendar };
-        }
-      } catch (_err) {
-        // Silent — a missing calendar year is a soft failure, not fatal.
-      }
-      return null;
-    };
-
-    const results = await Promise.all(periods.map(fetchPeriod));
-    results.forEach(r => {
-      if (r) calendars[r.id] = r.calendar;
-    });
-
-    return calendars;
-  };
-
   const handleLogin = async (user, tok) => {
+    const gen = ++loginGenRef.current;
     try {
       setUsername(user);
       setToken(tok);
 
-      const query = `
-        query($login: String!) {
-          user(login: $login) {
-            name
-            login
-            bio
-            avatarUrl
-            url
-            company
-            location
-            websiteUrl
-            followers { totalCount }
-            following { totalCount }
-            contributionsCollection {
-              contributionYears
-            }
-            pullRequests(last: 50, orderBy: {field: CREATED_AT, direction: DESC}) {
-              nodes {
-                title url state createdAt
-                repository {
-                  nameWithOwner
-                  primaryLanguage { name color }
-                  licenseInfo { name spdxId }
-                }
-              }
-            }
-            issues(last: 50, orderBy: {field: CREATED_AT, direction: DESC}) {
-              nodes {
-                title url state createdAt
-                repository {
-                  nameWithOwner
-                  primaryLanguage { name color }
-                  licenseInfo { name spdxId }
-                }
-              }
-            }
-            repositoryDiscussions(last: 50) {
-              nodes {
-                title url createdAt
-                repository {
-                  nameWithOwner
-                  primaryLanguage { name color }
-                  licenseInfo { name spdxId }
-                }
-              }
-            }
-          }
+      const { status, json } = await githubGraphql(tok, IDENTITY_QUERY, { login: user });
+      if (gen !== loginGenRef.current) return; // superseded by logout/new login
+
+      // A rejected token returns a REST-style body ({ message: "Bad
+      // credentials" }) with no GraphQL `data`/`errors` — classify it so the
+      // user sees the real reason instead of a misleading "user not found".
+      if (json?.message && !json.data) {
+        if (status === 401) {
+          throw new Error('GitHub rejected the access token — it may be expired or revoked. Generate a new token and update it.');
         }
-      `;
+        if (status === 403) {
+          throw new Error(`GitHub refused the request: ${json.message}`);
+        }
+        throw new Error(`GitHub error: ${json.message}`);
+      }
+      if (json?.errors?.length) throw new Error(json.errors[0]?.message || 'GitHub query failed.');
 
-      const response = await fetch('https://api.github.com/graphql', {
-        method: 'POST',
-        headers: { Authorization: `bearer ${tok}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, variables: { login: user } }),
-      });
-      const result = await response.json();
-      if (result.errors) throw new Error(result.errors[0].message);
+      const userData = json?.data?.user;
+      if (!userData) throw new Error(`No GitHub user named "${user}" was found.`);
 
-      const userData = result.data.user;
-      if (!userData) throw new Error("User not found");
-
+      // Signed in — render immediately, then backfill activity lists.
       setData(userData);
-
-      // Fetch contribution calendars for all years (up to last 5)
-      const allYears = userData.contributionsCollection?.contributionYears || [new Date().getFullYear()];
-      const yearsToFetch = allYears.slice(0, 5);
-      const calendars = await fetchContributionCalendar(tok, user, yearsToFetch);
-      setContributionData({ years: yearsToFetch, calendar: calendars });
+      loadActivity(tok, user, gen);
     } catch (err) {
+      if (gen !== loginGenRef.current) return; // stale failure — ignore
+      if (err?.name === 'AbortError') {
+        throw new Error('GitHub took too long to respond. Please try again.');
+      }
       // Do NOT log err here — some GitHub error responses echo request
       // metadata that includes the token. Rethrow with a scrubbed message.
       throw new Error(err?.message || 'Sign-in failed. Check your credentials and try again.');
     }
   };
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback((notice) => {
+    loginGenRef.current++; // invalidate any in-flight login
     setData(null);
     setToken('');
     setUsername('');
-    setContributionData(null);
+    setLoginNotice(notice && notice.text ? notice : null);
+  }, []);
+
+  // --- Automatic Login ---
+  useEffect(() => {
+    if (autoLoginTriedRef.current) return;
+    const autoUsername = import.meta.env.VITE_GITHUB_USERNAME;
+    const autoToken = import.meta.env.VITE_GITHUB_TOKEN;
+    if (!autoUsername || !autoToken) return;
+
+    autoLoginTriedRef.current = true;
+    setIsAutoLoggingIn(true);
+    handleLogin(autoUsername, autoToken)
+      .catch((err) =>
+        setLoginNotice({
+          text: err?.message || 'Automatic sign-in failed. Enter your credentials to continue.',
+          tone: 'error',
+        })
+      )
+      .finally(() => setIsAutoLoggingIn(false));
   }, []);
 
   // --- Idle-timeout token wipe -------------------------------------------
@@ -200,7 +209,7 @@ const App = () => {
     const reset = () => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       idleTimerRef.current = setTimeout(
-        handleLogout,
+        () => handleLogout({ text: 'Signed out after inactivity. Sign in again to continue.', tone: 'info' }),
         IDLE_WIPE_MINUTES * 60 * 1000
       );
     };
@@ -222,7 +231,6 @@ const App = () => {
       setToken('');
       setUsername('');
       setData(null);
-      setContributionData(null);
     };
     window.addEventListener('beforeunload', wipe);
     return () => window.removeEventListener('beforeunload', wipe);
@@ -248,7 +256,11 @@ const App = () => {
                   data ? (
                     <Navigate to="/home" replace />
                   ) : (
-                    <LoginPage onLogin={handleLogin} autoLoggingIn={isAutoLoggingIn} />
+                    <LoginPage
+                      onLogin={handleLogin}
+                      autoLoggingIn={isAutoLoggingIn}
+                      notice={loginNotice}
+                    />
                   )
                 }
               />
@@ -256,12 +268,9 @@ const App = () => {
                 path="/home"
                 element={
                   data ? (
-                    <HomePage
-                      data={data}
-                      username={username}
-                      token={token}
-                      contributionData={contributionData}
-                    />
+                    <HomePage data={data} />
+                  ) : isAutoLoggingIn ? (
+                    <PageLoader />
                   ) : (
                     <Navigate to="/" replace />
                   )
@@ -270,9 +279,17 @@ const App = () => {
               <Route
                 path="/profile"
                 element={
-                  data ? <ProfilePage data={data} /> : <Navigate to="/" replace />
+                  data ? (
+                    <ProfilePage data={data} />
+                  ) : isAutoLoggingIn ? (
+                    <PageLoader />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
                 }
               />
+              {/* Catch-all: unknown paths go home instead of rendering blank. */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
         </main>

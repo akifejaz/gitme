@@ -131,14 +131,14 @@ const RecentActivity = ({ data }) => {
                     href={it.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex items-start gap-3 px-3 py-2 border border-github-border/60 rounded-sm bg-github-bg-secondary/40 hover:border-github-status-open/40 hover:bg-github-bg-secondary transition-colors"
+                    className="group flex items-start gap-3 px-3 py-2 border border-github-border/60 rounded-sm bg-github-bg-secondary/40 hover:border-github-status-open/40 hover:bg-github-bg-secondary transition-colors min-w-0"
                 >
                     <span className="mt-1 shrink-0">{stateIcon(it.state)}</span>
                     <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 text-[11px] font-mono text-github-text-secondary">
-                            <span>{it.repository?.nameWithOwner}</span>
-                            <span className="opacity-40">·</span>
-                            <span>{it.kind}</span>
+                        <div className="flex items-center gap-2 text-[11px] font-mono text-github-text-secondary min-w-0">
+                            <span className="truncate">{it.repository?.nameWithOwner}</span>
+                            <span className="opacity-40 shrink-0">·</span>
+                            <span className="shrink-0">{it.kind}</span>
                         </div>
                         <div className="text-[13.5px] text-github-text truncate group-hover:text-github-text-link">
                             {it.title}
@@ -158,14 +158,20 @@ const RecentActivity = ({ data }) => {
 /*  Uptime counter — "current focus" flavor                            */
 /* ------------------------------------------------------------------ */
 
-const useUptime = () => {
+// Leaf component so the per-second tick re-renders only this <span>, not the
+// entire (large) page tree.
+const Uptime = () => {
     const [now, setNow] = useState(() => new Date());
     useEffect(() => {
         const t = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(t);
     }, []);
     // hh:mm:ss UTC — reads like a system clock, no PII
-    return now.toISOString().slice(11, 19);
+    return (
+        <span className="ml-auto hidden sm:inline opacity-60">
+            uptime {now.toISOString().slice(11, 19)} UTC
+        </span>
+    );
 };
 
 /* ------------------------------------------------------------------ */
@@ -176,7 +182,6 @@ const PUBS_DEFAULT = 4;
 const BLOGS_DEFAULT = 3;
 
 const HomePage = ({ data }) => {
-    const uptime = useUptime();
     const avatarUrl = data?.avatarUrl || `https://github.com/${userConfig.handle}.png`;
     const resumeUrl = `${import.meta.env.BASE_URL}cv/${userConfig.cvUsername}.pdf`;
 
@@ -214,7 +219,7 @@ const HomePage = ({ data }) => {
                     <span className="text-github-text-link">~/portfolio</span>
                     <span className="opacity-60">$</span>
                     <span>whoami</span>
-                    <span className="ml-auto hidden sm:inline opacity-60">uptime {uptime} UTC</span>
+                    <Uptime />
                 </div>
 
                 <header className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-8 items-start">
@@ -355,9 +360,9 @@ const HomePage = ({ data }) => {
                                     {exp.highlights?.length > 0 && (
                                         <ul className="mt-3 space-y-1 text-[14px] text-github-text-secondary leading-relaxed">
                                             {exp.highlights.map((h, j) => (
-                                                <li key={j} className="flex gap-2">
+                                                <li key={j} className="flex gap-2 min-w-0">
                                                     <Prompt>—</Prompt>
-                                                    <span>{h}</span>
+                                                    <span className="min-w-0 break-words">{h}</span>
                                                 </li>
                                             ))}
                                         </ul>

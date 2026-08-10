@@ -1,14 +1,32 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X, FileText, ExternalLink, Download } from 'lucide-react';
 
 const CVModal = ({ isOpen, onClose, username }) => {
+    const closeBtnRef = useRef(null);
+
+    // Close on Escape and focus the close button when the modal opens.
+    useEffect(() => {
+        if (!isOpen) return;
+        closeBtnRef.current?.focus();
+        const onKey = (e) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
-    // Use absolute path relative to the site base
-    const cvUrl = `/gitme/cv/${username}.pdf`;
+    // Build from the Vite base so it works in dev (/) and on GitHub Pages (/gitme/).
+    const cvUrl = `${import.meta.env.BASE_URL}cv/${username}.pdf`;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Curriculum Vitae"
+        >
             <div
                 className="bg-github-bg border border-github-border rounded-lg shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
                 onClick={(e) => e.stopPropagation()}
@@ -32,6 +50,7 @@ const CVModal = ({ isOpen, onClose, username }) => {
                             rel="noopener noreferrer"
                             className="p-2 text-github-text-secondary hover:text-github-text hover:bg-github-border/40 rounded-md transition-colors"
                             title="Open in new tab"
+                            aria-label="Open CV in new tab"
                         >
                             <ExternalLink size={16} />
                         </a>
@@ -40,14 +59,17 @@ const CVModal = ({ isOpen, onClose, username }) => {
                             download
                             className="p-2 text-github-text-secondary hover:text-github-text hover:bg-github-border/40 rounded-md transition-colors"
                             title="Download CV"
+                            aria-label="Download CV"
                         >
                             <Download size={16} />
                         </a>
                         <div className="w-[1px] h-4 bg-github-border mx-1" />
                         <button
+                            ref={closeBtnRef}
                             onClick={onClose}
                             className="p-2 text-github-text-secondary hover:text-github-status-closed hover:bg-github-accent-danger/10 rounded-md transition-colors"
                             title="Close"
+                            aria-label="Close"
                         >
                             <X size={18} />
                         </button>
