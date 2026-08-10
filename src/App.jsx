@@ -237,7 +237,7 @@ const App = () => {
   }, []);
 
   return (
-    <BrowserRouter basename="/gitme">
+    <BrowserRouter basename="/">
       <div className="min-h-screen bg-github-bg text-github-text flex flex-col">
         {data && (
           <Navbar

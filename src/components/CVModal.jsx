@@ -17,7 +17,7 @@ const CVModal = ({ isOpen, onClose, username }) => {
 
     if (!isOpen) return null;
 
-    // Build from the Vite base so it works in dev (/) and on GitHub Pages (/gitme/).
+    // Build from the Vite base so the path is correct regardless of deploy base.
     const cvUrl = `${import.meta.env.BASE_URL}cv/${username}.pdf`;
 
     return (

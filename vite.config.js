@@ -22,7 +22,8 @@ import react from '@vitejs/plugin-react'
  */
 export default defineConfig({
   plugins: [react()],
-  base: '/gitme/',
+  // Served at the custom-domain root (akifejaz.dev/), not a project subpath.
+  base: '/',
   server: {
     port: 3000,
     open: true,
