@@ -1,18 +1,47 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import userConfig from './userConfig.js'
+import {
+  buildDescription,
+  buildJsonLd,
+  buildRobotsTxt,
+  buildSitemap,
+  buildStaticContent,
+} from './seo.config.js'
 
 /**
- * Substitutes %USER_NAME% in index.html with the name from userConfig, so the
- * document title reads "GitMe | <name>". Done at build time (and in dev, via
- * the same hook) rather than with `document.title` in React: the title is then
- * correct in the served HTML, with no flash of the placeholder and no reliance
- * on the crawler running JavaScript.
+ * Build-time SEO. Substitutes the %USER_NAME% / %USER_DESCRIPTION% placeholders
+ * in index.html and injects a schema.org JSON-LD graph, then emits robots.txt
+ * and sitemap.xml.
+ *
+ * Done at build time (and in dev, via the same hook) rather than from React:
+ * the metadata is then present in the raw HTML, so it works for crawlers and
+ * link-preview bots that never execute JavaScript.
  */
-const htmlUserName = () => ({
-  name: 'html-user-name',
+const seo = () => ({
+  name: 'seo',
   transformIndexHtml(html) {
-    return html.replaceAll('%USER_NAME%', userConfig.name || '')
+    const jsonLd = buildJsonLd(userConfig)
+      // A literal "</script>" inside JSON would close the tag early.
+      .replace(/<\//g, '<\\/')
+    return html
+      .replaceAll('%USER_NAME%', userConfig.name || '')
+      .replaceAll('%USER_DESCRIPTION%', buildDescription(userConfig))
+      .replace(
+        '</head>',
+        `  <script type="application/ld+json">${jsonLd}</script>\n</head>`
+      )
+      // Pre-rendered content inside #root. React replaces it on mount, so
+      // this is only ever seen by clients that don't run JavaScript.
+      .replace(
+        '<div id="root"></div>',
+        `<div id="root">${buildStaticContent(userConfig)}</div>`
+      )
+  },
+  generateBundle() {
+    const isoDate = new Date().toISOString().slice(0, 10)
+    this.emitFile({ type: 'asset', fileName: 'robots.txt', source: buildRobotsTxt() })
+    this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: buildSitemap(isoDate) })
   },
 })
 
@@ -36,7 +65,7 @@ const htmlUserName = () => ({
  *     reconnaissance (llm.txt, README, package.json, config files).
  */
 export default defineConfig({
-  plugins: [react(), htmlUserName()],
+  plugins: [react(), seo()],
   // Served at the custom-domain root (akifejaz.dev/), not a project subpath.
   base: '/',
   server: {

@@ -10,6 +10,16 @@ import Footer from './components/Footer';
 // find the token in memory.
 const IDLE_WIPE_MINUTES = 6 * 60;
 
+// When build-time credentials are present this deployment is a personal
+// portfolio rather than the multi-user tool. In that mode the page content
+// (which comes from the static userConfig, not the API) renders immediately
+// instead of waiting on GitHub, so search engines, link-preview bots and
+// first-time visitors all see the portfolio even if the API is slow, rate
+// limited, or the token has been revoked.
+const IS_PORTFOLIO_MODE = Boolean(
+  import.meta.env.VITE_GITHUB_USERNAME && import.meta.env.VITE_GITHUB_TOKEN
+);
+
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const HomePage = lazy(() => import('./pages/HomePage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
@@ -129,9 +139,7 @@ const App = () => {
   // Start "true" when auto-login creds are present so a deep-link / refresh to
   // a protected route waits for login instead of redirecting away on first
   // render (before the auto-login effect has even run).
-  const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(
-    () => Boolean(import.meta.env.VITE_GITHUB_USERNAME && import.meta.env.VITE_GITHUB_TOKEN)
-  );
+  const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(IS_PORTFOLIO_MODE);
   // Message shown on the login page after a failed auto-login or an idle wipe.
   const [loginNotice, setLoginNotice] = useState(null); // { text, tone } | null
 
@@ -263,7 +271,10 @@ const App = () => {
     <BrowserRouter basename="/">
       <RouteAnalytics />
       <div className="min-h-screen bg-github-bg text-github-text flex flex-col">
-        {data && (
+        {/* Rendered up-front in portfolio mode as well, so the header does not
+            pop in when the API resolves and shove the page down (layout shift
+            is a Core Web Vitals ranking signal). */}
+        {(IS_PORTFOLIO_MODE || data) && (
           <Navbar
             data={data}
             username={username}
@@ -274,11 +285,13 @@ const App = () => {
         <main className="flex-grow">
           <Suspense fallback={<PageLoader />}>
             <Routes>
+              {/* "/" is the canonical, indexed URL, so it must serve the
+                  portfolio itself — never a sign-in form or a spinner. */}
               <Route
                 path="/"
                 element={
-                  data ? (
-                    <Navigate to="/home" replace />
+                  IS_PORTFOLIO_MODE || data ? (
+                    <HomePage data={data} />
                   ) : (
                     <LoginPage
                       onLogin={handleLogin}
@@ -291,7 +304,7 @@ const App = () => {
               <Route
                 path="/home"
                 element={
-                  data ? (
+                  IS_PORTFOLIO_MODE || data ? (
                     <HomePage data={data} />
                   ) : isAutoLoggingIn ? (
                     <PageLoader />
@@ -318,7 +331,7 @@ const App = () => {
           </Suspense>
         </main>
 
-        {data && <Footer />}
+        {(IS_PORTFOLIO_MODE || data) && <Footer />}
 
         {/* Global Floating AI Chatbot */}
         {data && <GitMeChat data={data} />}
