@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LogOut, FileText } from 'lucide-react';
-import GithubLogo from './GithubLogo';
+import GitMeLogo from './GitMeLogo';
 import CVModal from './CVModal';
 import ThemeToggle from './ThemeToggle';
 import userConfig from '../../userConfig';
@@ -20,7 +20,7 @@ const Navbar = ({ data, onLogout, username }) => {
             <div className="max-w-[1280px] mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 sm:gap-6 min-w-0">
                     <NavLink to="/home" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
-                        <GithubLogo size={32} className="text-github-text" />
+                        <GitMeLogo size={32} className="text-github-text" />
                         <span className="font-bold text-base tracking-tight text-github-text hidden sm:inline">GitMe</span>
                     </NavLink>
 

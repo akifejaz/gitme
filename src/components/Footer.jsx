@@ -1,5 +1,5 @@
 import React from 'react';
-import GithubLogo from './GithubLogo';
+import GitMeLogo from './GitMeLogo';
 import { Heart } from 'lucide-react';
 import userConfig from '../../userConfig';
 
@@ -11,7 +11,7 @@ const Footer = () => {
             <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-2.5">
-                        <GithubLogo size={18} className="text-github-text-secondary opacity-40 hover:opacity-100 transition-opacity cursor-pointer" />
+                        <GitMeLogo size={18} className="text-github-text-secondary opacity-40 hover:opacity-100 transition-opacity cursor-pointer" />
                         <div className="flex flex-col leading-tight">
                             <p className="text-[12px] text-github-text-secondary/70">
                                 &copy; {currentYear}{' '}

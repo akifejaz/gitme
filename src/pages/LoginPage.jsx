@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle, Info } from 'lucide-react';
-import GithubLogo from '../components/GithubLogo';
+import GitMeLogo from '../components/GitMeLogo';
 import ThemeToggle from '../components/ThemeToggle';
 
 const LoginPage = ({ onLogin, autoLoggingIn, notice }) => {
@@ -14,7 +14,7 @@ const LoginPage = ({ onLogin, autoLoggingIn, notice }) => {
     if (autoLoggingIn) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-github-bg-tertiary p-6 animate-pulse">
-                <GithubLogo size={48} className="text-github-text-secondary opacity-50 mb-4" />
+                <GitMeLogo size={48} className="text-github-text-secondary opacity-50 mb-4" />
                 <p className="text-sm text-github-text-secondary font-medium tracking-wide">
                     Authenticating automatically...
                 </p>
@@ -55,7 +55,7 @@ const LoginPage = ({ onLogin, autoLoggingIn, notice }) => {
             </div>
             <div className="w-full max-w-sm">
                 <div className="flex justify-center mb-8">
-                    <GithubLogo size={48} className="text-github-text" />
+                    <GitMeLogo size={48} className="text-github-text" />
                 </div>
                 <h1 className="text-2xl font-light text-center text-github-text mb-6">
                     Sign in to <span className="font-bold">GitMe</span>

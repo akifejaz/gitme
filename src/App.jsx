@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import GitMeChat from './components/GitMeChat';
 import Footer from './components/Footer';
@@ -19,6 +19,29 @@ const PageLoader = () => (
     <div className="w-6 h-6 border-2 border-github-text-secondary/30 border-t-github-text-secondary rounded-full animate-spin" />
   </div>
 );
+
+// Counts client-side route changes in GoatCounter. Without this only the
+// first page load is recorded, because a React Router navigation never
+// reloads the document. The very first location is skipped: count.js already
+// counts it on load, and counting it here too would double it.
+const RouteAnalytics = () => {
+  const location = useLocation();
+  const isFirstLocationRef = useRef(true);
+
+  useEffect(() => {
+    if (isFirstLocationRef.current) {
+      isFirstLocationRef.current = false;
+      return;
+    }
+    // Optional chaining throughout: count.js is loaded async and may be
+    // blocked by an ad blocker, which must never break navigation.
+    window.goatcounter?.count?.({
+      path: location.pathname + location.search,
+    });
+  }, [location]);
+
+  return null;
+};
 
 // Auto-login must be fast and must never hang. Bound every GitHub call so a
 // slow/unreachable API aborts instead of leaving the spinner up forever.
@@ -238,6 +261,7 @@ const App = () => {
 
   return (
     <BrowserRouter basename="/">
+      <RouteAnalytics />
       <div className="min-h-screen bg-github-bg text-github-text flex flex-col">
         {data && (
           <Navbar

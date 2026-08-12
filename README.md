@@ -1,7 +1,7 @@
 # <p align="center">GitMe: AI-Powered GitHub Profile Analyzer & Developer Impact Dashboard</p>
 
 <p align="center">
-  <img src="public/gitme_banner.png" alt="GitMe Banner - GitHub Profile Analytics & Resume Builder" width="800">
+  <img src="public/gitme-banner.svg" alt="GitMe - Your git-powered portfolio" width="560">
 </p>
 
 <p align="center">

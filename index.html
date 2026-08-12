@@ -8,10 +8,11 @@
     Content-Security-Policy — defence-in-depth against XSS / supply-chain
     compromise.
 
-    script-src is 'self' only (no 'unsafe-inline'). The pre-hydration
-    theme script is loaded as an external file (theme-init.js) precisely
-    so we can enforce this. Any future inline script or `eval()`-style
-    payload from a compromised dependency will be blocked by the browser.
+    script-src has no 'unsafe-inline'. Every script we ship is an external
+    file (theme-init.js, spa-redirect.js) precisely so we can enforce this.
+    Any inline script or `eval()`-style payload from a compromised
+    dependency will be blocked by the browser. The one third-party origin
+    is gc.zgo.at, which serves the GoatCounter analytics beacon.
 
     style-src keeps 'unsafe-inline' because React uses `style="…"` props
     on elements. That's a style attribute, not a `<style>` element, and
@@ -23,11 +24,11 @@
   -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    connect-src 'self' https://api.github.com https://openrouter.ai https://www.google.com;
-    img-src 'self' data: https://avatars.githubusercontent.com https://github.com https://www.google.com https://icons.duckduckgo.com https://i1.rgstatic.net https://xcelerium.com https://cloud-v.co;
+    connect-src 'self' https://api.github.com https://openrouter.ai https://www.google.com https://akifejaz.goatcounter.com;
+    img-src 'self' data: https://avatars.githubusercontent.com https://github.com https://www.google.com https://icons.duckduckgo.com https://i1.rgstatic.net https://xcelerium.com https://cloud-v.co https://akifejaz.goatcounter.com;
     font-src 'self' data:;
     style-src 'self' 'unsafe-inline';
-    script-src 'self';
+    script-src 'self' https://gc.zgo.at;
     frame-src 'self';
     object-src 'none';
     base-uri 'self';
@@ -41,6 +42,14 @@
        Bare relative path — Vite adds the base prefix exactly once for
        both dev and production. -->
   <script src="theme-init.js"></script>
+  <!-- GoatCounter analytics: cookieless, no personal data, no consent banner
+       required. count.js sends the hit via navigator.sendBeacon() and falls
+       back to an image pixel, so BOTH connect-src and img-src must allow
+       akifejaz.goatcounter.com. Localhost is ignored by default, so dev
+       traffic never pollutes the stats. SPA route changes are counted
+       manually in App.jsx. -->
+  <script data-goatcounter="https://akifejaz.goatcounter.com/count" async
+    src="https://gc.zgo.at/count.js"></script>
   <meta name="description"
     content="GitMe - AI-Powered GitHub Profile Analyzer & Resume Builder. Visualize your developer impact, track contributions, and synthesize professional summaries for recruiters." />
   <meta name="keywords"
