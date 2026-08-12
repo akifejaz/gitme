@@ -1,5 +1,20 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import userConfig from './userConfig.js'
+
+/**
+ * Substitutes %USER_NAME% in index.html with the name from userConfig, so the
+ * document title reads "GitMe | <name>". Done at build time (and in dev, via
+ * the same hook) rather than with `document.title` in React: the title is then
+ * correct in the served HTML, with no flash of the placeholder and no reliance
+ * on the crawler running JavaScript.
+ */
+const htmlUserName = () => ({
+  name: 'html-user-name',
+  transformIndexHtml(html) {
+    return html.replaceAll('%USER_NAME%', userConfig.name || '')
+  },
+})
 
 /**
  * SECURITY posture for this config:
@@ -21,7 +36,7 @@ import react from '@vitejs/plugin-react'
  *     reconnaissance (llm.txt, README, package.json, config files).
  */
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), htmlUserName()],
   // Served at the custom-domain root (akifejaz.dev/), not a project subpath.
   base: '/',
   server: {
