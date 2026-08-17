@@ -23,13 +23,13 @@ const BRIEF_PR_COUNT = 10;
 const BRIEF_ISSUE_COUNT = 5;
 const BRIEF_DISCUSSION_COUNT = 5;
 
-// Per-session rate limit — protects our OpenRouter quota from a single
+// Per-session rate limit - protects our OpenRouter quota from a single
 // visitor spamming the chat. Sliding window of RATE_WINDOW_MS.
 const RATE_MAX_REQUESTS = 8;
 const RATE_WINDOW_MS = 60_000;
 
 // HTTP header values must be ISO-8859-1 (Latin-1). Strip anything outside
-// printable ASCII so header construction never throws — em dashes, curly
+// printable ASCII so header construction never throws - em dashes, curly
 // quotes, and other Unicode we use freely in the UI would otherwise break.
 const asciiHeader = (s) =>
     (s || '')
@@ -48,7 +48,7 @@ const buildPortfolioBrief = (cfg, ghData) => {
     if (!cfg) return '';
     const lines = [];
 
-    // SECURITY / privacy — do NOT ship email, phone, LinkedIn URL, or the
+    // SECURITY / privacy - do NOT ship email, phone, LinkedIn URL, or the
     // calendar meeting link into the third-party model. The model doesn't
     // need PII to answer questions; if a visitor asks how to contact the
     // owner, we tell it to point them at the on-page Contact section.
@@ -60,8 +60,8 @@ const buildPortfolioBrief = (cfg, ghData) => {
     if (cfg.website) lines.push(`Website: ${cfg.website}`);
     if (cfg.github) lines.push(`GitHub: ${cfg.github}`);
     lines.push(
-        'Contact details (email, LinkedIn, calendar link) are visible on the site itself — ' +
-        'refer visitors to the Contact section rather than quoting them.'
+        'Contact details (email, LinkedIn, calendar link) are visible on the site itself. ' +
+        'Refer visitors to the Contact section rather than quoting them.'
     );
 
     if (cfg.bioShort || cfg.bioLong?.length) {
@@ -111,7 +111,7 @@ const buildPortfolioBrief = (cfg, ghData) => {
         cfg.publications.forEach((pub) => {
             const venue = pub.publishedIn ?? pub.conference ?? '';
             lines.push(
-                `- "${pub.title}" — ${pub.venue}${venue ? ` · ${venue}` : ''} (${pub.date}) — authors: ${pub.authors}`
+                `- "${pub.title}" - ${pub.venue}${venue ? ` · ${venue}` : ''} (${pub.date}) - authors: ${pub.authors}`
             );
         });
     }
@@ -121,7 +121,7 @@ const buildPortfolioBrief = (cfg, ghData) => {
         lines.push('## Writings / blogs');
         cfg.blogs.forEach((b) => {
             lines.push(
-                `- "${b.title}" (${b.date})${b.summary ? ` — ${b.summary}` : ''}`
+                `- "${b.title}" (${b.date})${b.summary ? ` - ${b.summary}` : ''}`
             );
         });
     }
@@ -143,7 +143,7 @@ const buildPortfolioBrief = (cfg, ghData) => {
         });
     }
 
-    // GitHub live data — only recent titles for context, no giant blobs.
+    // GitHub live data - only recent titles for context, no giant blobs.
     if (ghData) {
         const prs = (ghData.pullRequests?.nodes || []).slice(0, BRIEF_PR_COUNT);
         const issues = (ghData.issues?.nodes || []).slice(0, BRIEF_ISSUE_COUNT);
@@ -183,7 +183,7 @@ const buildPortfolioBrief = (cfg, ghData) => {
 
 const buildSystemPrompt = (portfolioBrief, name) => `
 You are the personal AI assistant embedded on ${name}'s portfolio website.
-Your job is to answer questions from visitors about ${name} — their
+Your job is to answer questions from visitors about ${name}: their
 experience, skills, projects, publications, education, open-source
 contributions, and writings.
 
@@ -193,12 +193,12 @@ Ground rules:
 2. If a question can't be answered from the brief, say so plainly and
    suggest the most relevant section of the portfolio (e.g. "See the
    Experience section" or "See the Publications section").
-3. Keep answers short: 2–4 sentences, plain prose, no bullet lists unless
+3. Keep answers short: 2-4 sentences, plain prose, no bullet lists unless
    the visitor asks for a list. No markdown headings.
 4. Refer to ${name} in the third person by first name.
 5. Be warm and clear, not salesy. Do not use marketing adjectives ("amazing",
    "world-class", etc.). Let the facts speak.
-6. Do not answer questions that are unrelated to ${name} or their work —
+6. Do not answer questions that are unrelated to ${name} or their work -
    politely redirect visitors back to the portfolio's topic.
 
 --- Portfolio brief ---
@@ -218,7 +218,7 @@ const suggestionsFor = (name) => [
 ];
 
 // Generic, visitor-facing failure text. Technical detail (missing env var,
-// upstream status) goes to console.warn — never into the chat bubble.
+// upstream status) goes to console.warn - never into the chat bubble.
 const GENERIC_UNAVAILABLE =
     "The assistant is unavailable right now. Please try again later.";
 
@@ -242,7 +242,7 @@ const GitMeChat = ({ data }) => {
 
     const name = userConfig.name || data?.name || 'this developer';
 
-    // Build the brief once per data change — not per keystroke.
+    // Build the brief once per data change - not per keystroke.
     const portfolioBrief = useMemo(
         () => buildPortfolioBrief(userConfig, data),
         [data]
@@ -287,7 +287,7 @@ const GitMeChat = ({ data }) => {
     }, [isOpen]);
 
     // In-memory sliding window of recent send timestamps.
-    // Not persisted — resets when the tab closes.
+    // Not persisted - resets when the tab closes.
     const rateStampsRef = useRef([]);
 
     const dismissTeaser = () => {
@@ -299,7 +299,7 @@ const GitMeChat = ({ data }) => {
         const raw = (contentOverride ?? input).trim();
         if (!raw || isLoading) return;
 
-        // Per-session rate limit — keeps a single visitor from burning
+        // Per-session rate limit - keeps a single visitor from burning
         // through our OpenRouter quota.
         const now = Date.now();
         rateStampsRef.current = rateStampsRef.current.filter(
@@ -326,7 +326,7 @@ const GitMeChat = ({ data }) => {
 
         const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY?.trim();
         if (!apiKey) {
-            console.warn('GitMeChat: VITE_OPENROUTER_API_KEY is not set — chat disabled.');
+            console.warn('GitMeChat: VITE_OPENROUTER_API_KEY is not set. Chat is disabled.');
             setMessages((prev) =>
                 [
                     ...prev,
@@ -386,7 +386,7 @@ const GitMeChat = ({ data }) => {
                 if (response.ok && !result.error) {
                     answer =
                         result.choices?.[0]?.message?.content?.trim() ||
-                        "I didn't get a response — try rephrasing.";
+                        "I didn't get a response. Please try rephrasing.";
                     break;
                 }
 
@@ -394,7 +394,7 @@ const GitMeChat = ({ data }) => {
                 const upstream = result.error?.message || result.error || '';
 
                 // Retry-worthy: model access / availability / paywall problems
-                // — a `:free` fallback might not hit the same wall.
+                // - a `:free` fallback might not hit the same wall.
                 const isRetryable =
                     status === 402 || // out of credits for THIS model
                     status === 404 || // model not found on this account
@@ -421,7 +421,7 @@ const GitMeChat = ({ data }) => {
                 [...prev, { role: 'assistant', content: answer }].slice(-MAX_HISTORY)
             );
         } catch (err) {
-            // Component unmounted mid-request (logout/idle wipe) — drop silently.
+            // Component unmounted mid-request (logout/idle wipe) - drop silently.
             if (err?.name === 'AbortError') return;
             // Log the technical detail; show the visitor a generic message only.
             console.warn('GitMeChat send failed:', err?.message || err);

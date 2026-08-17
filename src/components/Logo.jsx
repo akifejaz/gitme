@@ -3,11 +3,11 @@ import React, { useState } from 'react';
 /**
  * Small square logo for experience / education / org entries.
  *
- * Fallback chain (in order — each on-error advances to the next):
- *   1. `logo`                    — explicit URL or public path (best quality)
- *   2. DuckDuckGo icon service   — reliable, no rate limits, no auth
- *   3. Google s2/favicons        — legacy; historically throttled
- *   4. Initials monogram         — pure text, always renders
+ * Fallback chain (in order - each on-error advances to the next):
+ *   1. `logo`                    - explicit URL or public path (best quality)
+ *   2. DuckDuckGo icon service   - reliable, no rate limits, no auth
+ *   3. Google s2/favicons        - legacy; historically throttled
+ *   4. Initials monogram         - pure text, always renders
  *
  * Every image origin the fallback chain uses must be listed in the CSP
  * `img-src` in index.html. If you add a new provider, update that list.

@@ -1,5 +1,5 @@
 // Pre-hydration theme swap. Loaded synchronously in <head> so it runs
-// before React paints — avoids FOUC when the user's saved theme differs
+// before React paints - avoids FOUC when the user's saved theme differs
 // from the default. Kept OUT of index.html so the page CSP can drop
 // 'unsafe-inline' from script-src.
 (function () {
@@ -13,6 +13,6 @@
         r.classList.remove('light', 'dark');
         r.classList.add(theme);
     } catch (e) {
-        /* private-mode / disabled storage — fall through, default theme wins */
+        /* private-mode / disabled storage - fall through, default theme wins */
     }
 })();

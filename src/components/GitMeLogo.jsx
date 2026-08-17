@@ -7,7 +7,7 @@ import React from 'react';
  * mark stays legible in both the light and dark themes. Callers set the
  * colour with a Tailwind text-* class (e.g. `text-github-text`).
  *
- * Source of truth for the artwork: public/gitme-logo.svg — keep the two in
+ * Source of truth for the artwork: public/gitme-logo.svg - keep the two in
  * sync if the mark changes.
  */
 const GitMeLogo = ({ size = 24, className = '' }) => {

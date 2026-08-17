@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!--
-    Content-Security-Policy — defence-in-depth against XSS / supply-chain
+    Content-Security-Policy - defence-in-depth against XSS / supply-chain
     compromise.
 
     script-src has no 'unsafe-inline'. Every script we ship is an external
@@ -16,7 +16,7 @@
 
     style-src keeps 'unsafe-inline' because React uses `style="…"` props
     on elements. That's a style attribute, not a `<style>` element, and
-    the CSP style-src covers both — Tailwind + React need this.
+    the CSP style-src covers both - Tailwind + React need this.
 
     connect-src is a tight allowlist of the exact hosts the app talks to.
     form-action is 'self' to block a compromised page from redirecting
@@ -25,7 +25,7 @@
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     connect-src 'self' https://api.github.com https://openrouter.ai https://www.google.com https://akifejaz.goatcounter.com;
-    img-src 'self' data: https://avatars.githubusercontent.com https://github.com https://www.google.com https://icons.duckduckgo.com https://i1.rgstatic.net https://xcelerium.com https://cloud-v.co https://akifejaz.goatcounter.com;
+    img-src 'self' data: https://avatars.githubusercontent.com https://github.com https://www.google.com https://icons.duckduckgo.com https://i1.rgstatic.net https://xcelerium.com https://cloud-v.co https://akifejaz.goatcounter.com https://images.credly.com;
     font-src 'self' data:;
     style-src 'self' 'unsafe-inline';
     script-src 'self' https://gc.zgo.at;
@@ -39,7 +39,7 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <!-- Pre-hydration theme swap. External file so CSP can be strict.
-       Bare relative path — Vite adds the base prefix exactly once for
+       Bare relative path - Vite adds the base prefix exactly once for
        both dev and production. -->
   <script src="theme-init.js"></script>
   <!-- GoatCounter analytics: cookieless, no personal data, no consent banner
@@ -66,6 +66,12 @@
   <meta property="og:description" content="%USER_DESCRIPTION%" />
   <meta property="og:image"
     content="https://akifejaz.dev/gitme_banner.png" />
+  <!-- Explicit dimensions let crawlers reserve the card layout before the
+       image downloads; without them some platforms fall back to a small
+       thumbnail or skip the image entirely. -->
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="%USER_NAME%, Systems and Firmware Engineer" />
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image" />
@@ -82,7 +88,7 @@
   <link rel="preconnect" href="https://api.github.com" />
   <link rel="dns-prefetch" href="https://api.github.com" />
   <!-- SPA deep-link restore. External file so the CSP can keep
-       script-src 'self' (no 'unsafe-inline'). Bare relative path — Vite
+       script-src 'self' (no 'unsafe-inline'). Bare relative path - Vite
        adds the base prefix exactly once for both dev and production. -->
   <script src="spa-redirect.js"></script>
 </head>

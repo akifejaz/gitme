@@ -1,4 +1,4 @@
-# GitMe — LLM Guide
+# GitMe - LLM Guide
 
 > A React + Vite personal portfolio site for a **user**, forked from the GitMe
 > GitHub-profile analyzer. The front page (`/home`) is a curated,
@@ -14,12 +14,12 @@ Most tasks reduce to editing `userConfig.js` and, occasionally,
 
 ## 1. Two identities
 
-This repo is a fork with two overlapping personas — do not conflate them:
+This repo is a fork with two overlapping personas - do not conflate them:
 
-- **GitMe (the upstream product)** — an AI-powered GitHub profile analyzer.
+- **GitMe (the upstream product)** - an AI-powered GitHub profile analyzer.
   This identity remains in `README.md`, `index.html` meta tags, `Footer.jsx`,
   `GitMeChat.jsx`, `CVModal.jsx`, `Navbar.jsx`, and `ProfilePage.jsx`.
-- **user's personal portfolio** — the new `HomePage.jsx` is a bespoke
+- **user's personal portfolio** - the new `HomePage.jsx` is a bespoke
   redesign that has nothing to do with GitMe's product identity. It reads
   from `userConfig.js` and renders a terminal-aesthetic portfolio.
 
@@ -41,7 +41,7 @@ When editing:
 - **Deploy:** GitHub Pages at `/gitme/` (hence `base: '/gitme/'` in Vite)
 
 Bundle strategy (`vite.config.js`): manual chunks split `react-vendor`,
-`markdown`, and `lucide` — keeping page bundles small.
+`markdown`, and `lucide` - keeping page bundles small.
 
 ---
 
@@ -85,10 +85,10 @@ gitme/
 
 1. **Login.** `LoginPage.jsx` collects a GitHub PAT + username. Auto-login is
    attempted on mount if `VITE_GITHUB_USERNAME` and `VITE_GITHUB_TOKEN` env
-   vars are set (`App.jsx` L26–39).
+   vars are set (`App.jsx` L26-39).
 2. **GraphQL fetch.** `App.jsx#handleLogin` runs a single query for profile
    metadata + last 50 PRs / Issues / Discussions, then `fetchContributionCalendar`
-   fetches per-year contribution calendars **in parallel** (`Promise.all`) —
+   fetches per-year contribution calendars **in parallel** (`Promise.all`) -
    last-12-months + up to 5 prior calendar years.
 3. **State.** Result is held in App-level `data` and `contributionData`
    `useState`. **There is no global store** (no Redux / Zustand / Context).
@@ -102,7 +102,7 @@ gitme/
 
 ---
 
-## 5. `userConfig.js` schema — the primary editing target
+## 5. `userConfig.js` schema - the primary editing target
 
 Every portfolio section on `/home` is driven by this file. Editing it is
 usually the whole task. Full schema:
@@ -253,33 +253,33 @@ GitMe path (README markdown) and available on ProfilePage-style surfaces.
 <div bg-github-bg>
   <div fixed grid-scanline-overlay />         // 4.5% opacity grid
   <main max-w-5xl mx-auto lg:px-12 pt-10 pb-24>
-    HERO — user@systems:~/portfolio$ whoami, name + blinking cursor,
+    HERO - user@systems:~/portfolio$ whoami, name + blinking cursor,
            tagline, availability radio-dot, quick links, avatar (dashed ring)
-    > ABOUT              — bioLong paragraphs (no width cap)
-    > SKILLS             — auto-fit chip groups
-    > EXPERIENCE         — timeline: [date | Logo + role + highlights]
-    > EDUCATION          — same timeline shape
-    > SELECTED WORK      — 2 / 3-col project card grid
-    > PUBLICATIONS       — timeline with venue · publishedIn · authors,
+    > ABOUT              - bioLong paragraphs (no width cap)
+    > SKILLS             - auto-fit chip groups
+    > EXPERIENCE         - timeline: [date | Logo + role + highlights]
+    > EDUCATION          - same timeline shape
+    > SELECTED WORK      - 2 / 3-col project card grid
+    > PUBLICATIONS       - timeline with venue · publishedIn · authors,
                            collapsed to PUBS_DEFAULT (4) with "more" toggle
-    > WRITINGS & BLOGS   — same collapsing pattern with BLOGS_DEFAULT (3)
-    > RECENT ACTIVITY    — 4 items from GitHub PRs+Issues,
+    > WRITINGS & BLOGS   - same collapsing pattern with BLOGS_DEFAULT (3)
+    > RECENT ACTIVITY    - 4 items from GitHub PRs+Issues,
                            diversified across ≥ 2 repos
-    > CONTRIBUT[ED/ING] TO — org logo pills (26px logo + name + ↗)
-    CONTACT              — mailto + calendar CTA
-    $ exit 0             — footer prompt
+    > CONTRIBUT[ED/ING] TO - org logo pills (26px logo + name + ↗)
+    CONTACT              - mailto + calendar CTA
+    $ exit 0             - footer prompt
   </main>
 </div>
 ```
 
 Reusable primitives defined inside the file:
-- `Prompt` — green `❯` / `$` glyph
-- `SectionHeader({ id, label })` — the `❯ LABEL ····` row (uppercased,
+- `Prompt` - green `❯` / `$` glyph
+- `SectionHeader({ id, label })` - the `❯ LABEL ····` row (uppercased,
   letter-spaced, dashed rule)
-- `Chip` — small mono border-pill in `default`, `accent`, `purple` tones
-- `BlinkingCursor` — animated green block after the name
-- `RecentActivity` — the sub-component pulling from `data` props
-- `useUptime` — hh:mm:ss UTC ticker for the hero header
+- `Chip` - small mono border-pill in `default`, `accent`, `purple` tones
+- `BlinkingCursor` - animated green block after the name
+- `RecentActivity` - the sub-component pulling from `data` props
+- `useUptime` - hh:mm:ss UTC ticker for the hero header
 
 `ACTIVITY_TOTAL` and `ACTIVITY_PER_REPO` at the top of the file tune the
 Recent Activity strip. `PUBS_DEFAULT` / `BLOGS_DEFAULT` tune the collapse
@@ -287,7 +287,7 @@ thresholds inside the `HomePage` component body.
 
 ### The `Logo` component
 
-`src/components/Logo.jsx` — used in Experience, Education, and Orgs.
+`src/components/Logo.jsx` - used in Experience, Education, and Orgs.
 Fallback chain:
 1. `logo` prop → use as-is (best quality)
 2. `logoDomain` prop → `https://www.google.com/s2/favicons?domain=X&sz=128`
@@ -306,14 +306,14 @@ Experience/Education entries.
   are hidden.
 - **Authenticated** → Navbar + Footer + floating `GitMeChat` mount;
   `/` → `/home` (HomePage); `/profile` renders the PR/Issue browser.
-- Client-side only. No backend. Tokens live in memory (React state) —
+- Client-side only. No backend. Tokens live in memory (React state) -
   never persisted, never sent anywhere except GitHub's API and (for chat)
   OpenRouter's API.
 
 Env vars (all `VITE_*` prefixed, exposed to client):
-- `VITE_GITHUB_USERNAME` — auto-login username
-- `VITE_GITHUB_TOKEN`    — auto-login PAT (needs `repo`, `read:user`, `user:email`)
-- `VITE_OPENROUTER_API_KEY` — for the floating chatbot
+- `VITE_GITHUB_USERNAME` - auto-login username
+- `VITE_GITHUB_TOKEN`    - auto-login PAT (needs `repo`, `read:user`, `user:email`)
+- `VITE_OPENROUTER_API_KEY` - for the floating chatbot
 
 ---
 
@@ -322,13 +322,13 @@ Env vars (all `VITE_*` prefixed, exposed to client):
 Grid / list of PRs, Issues, and Discussions from the GraphQL result.
 Local state:
 - `activeTab` (`PULL_REQUESTS` | `ISSUES` | `DISCUSSIONS`)
-- `searchQuery` — text filter on title + repo name
-- `activeFilters` — state filter (`OPEN` / `CLOSED` / `MERGED`; MERGED only
+- `searchQuery` - text filter on title + repo name
+- `activeFilters` - state filter (`OPEN` / `CLOSED` / `MERGED`; MERGED only
   applies when the PR tab is active)
-- `viewMode` — `grid` / `list`
+- `viewMode` - `grid` / `list`
 
 Uses `github-status-*` colors for state badges (open=green, closed=red,
-merged=purple). This page keeps GitMe's original UX — do not restyle it into
+merged=purple). This page keeps GitMe's original UX - do not restyle it into
 the terminal aesthetic unless explicitly asked.
 
 ---
@@ -345,7 +345,7 @@ reverse-chron order.
 ### Add a project
 Append to `projects[]`. Set `link` (project home). Optionally add
 `srcUrl` / `downloadUrl` / `prsUrl` for the card footer link row. Tags stay
-short (2–4 items). Do not include `year` unless you also re-enable the year
+short (2-4 items). Do not include `year` unless you also re-enable the year
 render (currently intentionally hidden).
 
 ### Add a publication
@@ -361,7 +361,7 @@ Edit `orgs[]`. Object form is preferred: `{ name, url, logoDomain }`.
 String form still works for backward compat.
 
 ### Retitle a section
-Section headers use `<SectionHeader label="…" />` — the label is uppercased
+Section headers use `<SectionHeader label="…" />` - the label is uppercased
 and letter-spaced via CSS. Terminal-syntax labels like `contribut[ed/ing] to`
 are literal strings.
 
@@ -379,7 +379,7 @@ triples (space-separated, no comma) because Tailwind consumes them via
 
 ### Add a lucide icon
 Import it from `lucide-react` at the top of the file. Match existing size
-conventions (11–13px inline, 14–16px section decorations, 20–26px logos).
+conventions (11-13px inline, 14-16px section decorations, 20-26px logos).
 
 ---
 
@@ -391,10 +391,10 @@ conventions (11–13px inline, 14–16px section decorations, 20–26px logos).
   `/foo.png` will break in production.
 - **`CVModal.jsx` hard-codes `/gitme/`** in the CV URL. If you ever change
   the base, this needs updating too.
-- **`BrowserRouter basename="/gitme"`** — same reason. Dev + prod routes
+- **`BrowserRouter basename="/gitme"`** - same reason. Dev + prod routes
   live under `/gitme/`.
 - **Object-key syntax:** do not use hyphenated keys (`src-url`) in
-  `userConfig.js` — they aren't valid JS identifiers. Use camelCase
+  `userConfig.js` - they aren't valid JS identifiers. Use camelCase
   (`srcUrl`, `downloadUrl`).
 - **HTML validity:** the pre-hydration theme script must sit **inside**
   `<head>`, not between `<html>` and `<head>`. Vite's parse5 will warn if
@@ -403,13 +403,13 @@ conventions (11–13px inline, 14–16px section decorations, 20–26px logos).
   `ThemeToggle` is also mounted floating on `LoginPage` so pre-login theme
   switching still works.
 - **The `year` field on projects is intentionally NOT rendered** on the
-  card header — removed by design. Keep it in the data if you like, but
+  card header - removed by design. Keep it in the data if you like, but
   don't add it back to the JSX unless asked.
 - **Recent Activity diversification:** `RecentActivity` in `HomePage.jsx`
   enforces `max 2 items per repo` up to `4 total` so the strip surfaces at
   least 2 different repos. If you change either constant, update the
   algorithm's fallback pass too.
-- **Chatbot is optional** — if `VITE_OPENROUTER_API_KEY` is unset the chat
+- **Chatbot is optional** - if `VITE_OPENROUTER_API_KEY` is unset the chat
   input still renders but calls will 401.
 - **Do NOT invent facts.** When editing bio, experience, projects, or any
   claim-bearing content: use only what's in `public/cv/user-name.pdf`,
@@ -435,8 +435,8 @@ same env vars listed above.
 ## 13. Reading order for a new LLM
 
 1. This file (`llm.txt`).
-2. `userConfig.js` — the data model + values.
-3. `src/pages/HomePage.jsx` — how the data model renders.
-4. `src/index.css` + `tailwind.config.js` — theme tokens.
-5. `src/App.jsx` — routing + GraphQL fetch shape.
+2. `userConfig.js` - the data model + values.
+3. `src/pages/HomePage.jsx` - how the data model renders.
+4. `src/index.css` + `tailwind.config.js` - theme tokens.
+5. `src/App.jsx` - routing + GraphQL fetch shape.
 6. Anything else only if the task requires it.

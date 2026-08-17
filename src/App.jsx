@@ -76,7 +76,7 @@ const githubGraphql = async (token, query, variables) => {
   }
 };
 
-// Lightweight identity query — this is all that gates the logged-in UI, so we
+// Lightweight identity query - this is all that gates the logged-in UI, so we
 // run it first and flip to signed-in the moment it returns (sub-second).
 const IDENTITY_QUERY = `
   query($login: String!) {
@@ -98,7 +98,7 @@ const IDENTITY_QUERY = `
   }
 `;
 
-// Heavier activity lists — fetched in the background after login and merged in
+// Heavier activity lists - fetched in the background after login and merged in
 // when they arrive. The Overview and Contributions views render without them
 // and fill in once resolved, so login latency never waits on this.
 const ACTIVITY_QUERY = `
@@ -158,7 +158,7 @@ const App = () => {
       const activity = json?.data?.user;
       if (activity) setData((prev) => (prev ? { ...prev, ...activity } : prev));
     } catch {
-      // Swallow — activity data is optional context, not a login blocker.
+      // Swallow - activity data is optional context, not a login blocker.
     }
   }, []);
 
@@ -172,11 +172,11 @@ const App = () => {
       if (gen !== loginGenRef.current) return; // superseded by logout/new login
 
       // A rejected token returns a REST-style body ({ message: "Bad
-      // credentials" }) with no GraphQL `data`/`errors` — classify it so the
+      // credentials" }) with no GraphQL `data`/`errors` - classify it so the
       // user sees the real reason instead of a misleading "user not found".
       if (json?.message && !json.data) {
         if (status === 401) {
-          throw new Error('GitHub rejected the access token — it may be expired or revoked. Generate a new token and update it.');
+          throw new Error('GitHub rejected the access token - it may be expired or revoked. Generate a new token and update it.');
         }
         if (status === 403) {
           throw new Error(`GitHub refused the request: ${json.message}`);
@@ -188,15 +188,15 @@ const App = () => {
       const userData = json?.data?.user;
       if (!userData) throw new Error(`No GitHub user named "${user}" was found.`);
 
-      // Signed in — render immediately, then backfill activity lists.
+      // Signed in - render immediately, then backfill activity lists.
       setData(userData);
       loadActivity(tok, user, gen);
     } catch (err) {
-      if (gen !== loginGenRef.current) return; // stale failure — ignore
+      if (gen !== loginGenRef.current) return; // stale failure - ignore
       if (err?.name === 'AbortError') {
         throw new Error('GitHub took too long to respond. Please try again.');
       }
-      // Do NOT log err here — some GitHub error responses echo request
+      // Do NOT log err here - some GitHub error responses echo request
       // metadata that includes the token. Rethrow with a scrubbed message.
       throw new Error(err?.message || 'Sign-in failed. Check your credentials and try again.');
     }
@@ -255,7 +255,7 @@ const App = () => {
     };
   }, [token, handleLogout]);
 
-  // Also wipe on `beforeunload` — belt-and-braces since React state dies
+  // Also wipe on `beforeunload` - belt-and-braces since React state dies
   // with the tab anyway, but this covers same-origin navigations.
   useEffect(() => {
     const wipe = () => {
@@ -286,7 +286,7 @@ const App = () => {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* "/" is the canonical, indexed URL, so it must serve the
-                  portfolio itself — never a sign-in form or a spinner. */}
+                  portfolio itself - never a sign-in form or a spinner. */}
               <Route
                 path="/"
                 element={

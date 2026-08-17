@@ -27,10 +27,10 @@ jobs:
       - name: Build
         # SECURITY notes on what we DO ship in the bundle:
         #
-        # * VITE_GITHUB_TOKEN — a *fine-grained* PAT scoped to READ-ONLY on
+        # * VITE_GITHUB_TOKEN - a *fine-grained* PAT scoped to READ-ONLY on
         #   PUBLIC resources only. 
         #
-        # * VITE_OPENROUTER_API_KEY — used only with the `openrouter/free`
+        # * VITE_OPENROUTER_API_KEY - used only with the `openrouter/free`
         #   meta-model. No credits, no billable models. 
         #
         # DO NOT add tokens with write scope, `repo`, private-repo access,

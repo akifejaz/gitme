@@ -19,6 +19,7 @@ import {
     ChevronUp,
 } from 'lucide-react';
 import userConfig from '../../userConfig';
+import { buildFaq } from '../../seo.config';
 import Logo from '../components/Logo';
 
 /* ------------------------------------------------------------------ */
@@ -107,7 +108,7 @@ const RecentActivity = ({ data }) => {
             }
             if (picked.length >= ACTIVITY_TOTAL) break;
         }
-        // Second pass: fill any remaining slots (edge case — only 1 repo has
+        // Second pass: fill any remaining slots (edge case - only 1 repo has
         // any activity in the fetched window).
         if (picked.length < ACTIVITY_TOTAL) {
             for (const item of sorted) {
@@ -155,7 +156,7 @@ const RecentActivity = ({ data }) => {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Uptime counter — "current focus" flavor                            */
+/*  Uptime counter - "current focus" flavor                            */
 /* ------------------------------------------------------------------ */
 
 // Leaf component so the per-second tick re-renders only this <span>, not the
@@ -166,7 +167,7 @@ const Uptime = () => {
         const t = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(t);
     }, []);
-    // hh:mm:ss UTC — reads like a system clock, no PII
+    // hh:mm:ss UTC - reads like a system clock, no PII
     return (
         <span className="ml-auto hidden sm:inline opacity-60">
             uptime {now.toISOString().slice(11, 19)} UTC
@@ -199,7 +200,7 @@ const HomePage = ({ data }) => {
 
     return (
         <div className="min-h-screen bg-github-bg text-github-text">
-            {/* Subtle scanline / grid background — flips with theme */}
+            {/* Subtle scanline / grid background - flips with theme */}
             <div
                 aria-hidden="true"
                 className="fixed inset-0 pointer-events-none opacity-[0.045]"
@@ -361,7 +362,7 @@ const HomePage = ({ data }) => {
                                         <ul className="mt-3 space-y-1 text-[14px] text-github-text-secondary leading-relaxed">
                                             {exp.highlights.map((h, j) => (
                                                 <li key={j} className="flex gap-2 min-w-0">
-                                                    <Prompt>—</Prompt>
+                                                    <Prompt>-</Prompt>
                                                     <span className="min-w-0 break-words">{h}</span>
                                                 </li>
                                             ))}
@@ -526,7 +527,7 @@ const HomePage = ({ data }) => {
                         </div>
                         <ol className="space-y-4">
                             {visiblePublications.map((p, i) => {
-                                // Row container is a plain <div> — never <a>. Individual
+                                // Row container is a plain <div> - never <a>. Individual
                                 // links (title, publishedIn) are separate anchors so no
                                 // <a> ever nests inside another <a>.
                                 const publishedIn = p.publishedIn ?? p.conference;
@@ -769,6 +770,106 @@ const HomePage = ({ data }) => {
                     </div>
                 </section>
 
+                {/* -------------------- CERTIFICATIONS -------------------- */}
+                {userConfig.certifications?.length > 0 && (
+                    <section className="mt-16">
+                        <SectionHeader id="certifications" label="certifications" />
+                        <div className="flex items-center justify-between mb-4">
+                            <p className="text-[12.5px] text-github-text-secondary font-mono">
+                                <Prompt>$</Prompt> ls ~/credentials/ --verified
+                            </p>
+                            {userConfig.credlyProfile && (
+                                <a
+                                    href={userConfig.credlyProfile}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11.5px] font-mono text-github-text-link hover:underline"
+                                >
+                                    credly <ArrowUpRight size={12} />
+                                </a>
+                            )}
+                        </div>
+                        <ul className="grid sm:grid-cols-2 gap-3">
+                            {userConfig.certifications.map((c) => (
+                                <li key={c.credentialUrl}>
+                                    <a
+                                        href={c.credentialUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group flex items-start gap-3.5 h-full p-3 border border-github-border/70 rounded-sm bg-github-bg-secondary/40 hover:border-github-status-open/40 hover:bg-github-bg-secondary transition-colors min-w-0"
+                                    >
+                                        {/* Badge art is ~260 KB each and this
+                                            section sits below the fold, so it
+                                            is lazily loaded and drawn small. */}
+                                        <img
+                                            src={c.image}
+                                            alt=""
+                                            width={56}
+                                            height={56}
+                                            loading="lazy"
+                                            decoding="async"
+                                            className="w-14 h-14 shrink-0 object-contain"
+                                        />
+                                        <div className="min-w-0">
+                                            <div className="text-[13.5px] text-github-text leading-snug group-hover:text-github-text-link">
+                                                {c.name}
+                                                <ArrowUpRight
+                                                    size={12}
+                                                    className="inline-block ml-1 -translate-y-[1px] opacity-50 group-hover:opacity-100"
+                                                />
+                                            </div>
+                                            <div className="mt-1 text-[11.5px] font-mono text-github-status-open">
+                                                {c.issuer}
+                                                <span className="text-github-text-secondary"> · {c.date}</span>
+                                            </div>
+                                            {c.skills?.length > 0 && (
+                                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                                    {c.skills.slice(0, 3).map((s) => (
+                                                        <Chip key={s}>{s}</Chip>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                )}
+
+                {/* -------------------- FAQ -------------------- */}
+                {/* Rendered from the same buildFaq() the JSON-LD uses. Google
+                    requires FAQPage structured data to correspond to content
+                    visible on the page, so these must stay in sync - deriving
+                    both from one function is what guarantees that. */}
+                <section className="mt-16">
+                    <SectionHeader id="faq" label="faq" />
+                    {/* Native <details> so the answer text stays in the DOM for
+                        crawlers, keyboard support comes free, and the shared
+                        `name` makes the group exclusive: opening one answer
+                        closes the others. */}
+                    <div className="space-y-2">
+                        {buildFaq(userConfig).map((f) => (
+                            <details
+                                key={f.question}
+                                name="faq"
+                                className="group border-l border-github-border/60 pl-4 sm:pl-5"
+                            >
+                                <summary className="flex items-start gap-2 cursor-pointer list-none text-[14.5px] text-github-text leading-snug hover:text-github-text-link transition-colors">
+                                    <ChevronDown
+                                        size={14}
+                                        className="mt-1 shrink-0 text-github-text-secondary transition-transform group-open:rotate-180"
+                                    />
+                                    <span>{f.question}</span>
+                                </summary>
+                                <p className="mt-1.5 ml-[22px] text-[13.5px] text-github-text-secondary leading-relaxed">
+                                    {f.answer}
+                                </p>
+                            </details>
+                        ))}
+                    </div>
+                </section>
+
                 {/* -------------------- CONTACT -------------------- */}
                 <section className="mt-20 pt-8 border-t border-dashed border-github-border/60">
                     <div className="font-mono text-[13px] text-github-text-secondary mb-3">
@@ -776,7 +877,7 @@ const HomePage = ({ data }) => {
                     </div>
                     <p className="text-[15px] text-github-text leading-relaxed max-w-lg">
                         If you&apos;re working on RISC-V, kernels, RTOS, or agentic AI for
-                        systems software — I&apos;d love to talk.
+                        systems software - I&apos;d love to talk.
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">
                         <a

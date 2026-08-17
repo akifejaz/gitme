@@ -4,6 +4,7 @@ import userConfig from './userConfig.js'
 import {
   buildDescription,
   buildJsonLd,
+  buildLlmsTxt,
   buildRobotsTxt,
   buildSitemap,
   buildStaticContent,
@@ -42,6 +43,36 @@ const seo = () => ({
     const isoDate = new Date().toISOString().slice(0, 10)
     this.emitFile({ type: 'asset', fileName: 'robots.txt', source: buildRobotsTxt() })
     this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: buildSitemap(isoDate) })
+    // GEO: authoritative plain-text summary for language models.
+    this.emitFile({
+      type: 'asset',
+      fileName: 'llms.txt',
+      source: buildLlmsTxt({ ...userConfig, __buildDate: isoDate }),
+    })
+  },
+  /**
+   * Serve the same three files in dev.
+   *
+   * generateBundle is a build-only hook, so without this the dev server falls
+   * through to its SPA handler and answers /robots.txt with index.html and a
+   * 200 - which looks like success and hides mistakes. Registering the
+   * middleware here (rather than returning a function) puts it BEFORE Vite's
+   * internal middlewares, so it wins against that fallback.
+   */
+  configureServer(server) {
+    const isoDate = new Date().toISOString().slice(0, 10)
+    const generated = {
+      '/robots.txt': ['text/plain', () => buildRobotsTxt()],
+      '/sitemap.xml': ['application/xml', () => buildSitemap(isoDate)],
+      '/llms.txt': ['text/plain', () => buildLlmsTxt({ ...userConfig, __buildDate: isoDate })],
+    }
+    server.middlewares.use((req, res, next) => {
+      const entry = generated[(req.url || '').split('?')[0]]
+      if (!entry) return next()
+      const [type, render] = entry
+      res.setHeader('Content-Type', `${type}; charset=utf-8`)
+      res.end(render())
+    })
   },
 })
 
@@ -78,7 +109,7 @@ export default defineConfig({
     },
     fs: {
       strict: true,
-      // Wildcards are picomatch — anywhere in the served tree.
+      // Wildcards are picomatch - anywhere in the served tree.
       deny: [
         '.env',
         '.env.*',
@@ -108,7 +139,7 @@ export default defineConfig({
         '**/tailwind.config.*',
         'postcss.config.*',
         '**/postcss.config.*',
-        // NB: userConfig.js is NOT denied — it's an ES module the app
+        // NB: userConfig.js is NOT denied - it's an ES module the app
         // imports at runtime. In dev, it's still exposed via loopback
         // only (server.host). In production, its PII fields are baked
         // into the bundle regardless, so denying wouldn't help.

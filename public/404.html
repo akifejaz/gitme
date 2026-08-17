@@ -3,7 +3,22 @@
 
 <head>
     <meta charset="utf-8">
-    <title>GitMe | Redirecting...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      GitHub Pages serves this file for every path that is not a real file,
+      which on a SPA means every deep link (/home, /profile) and every refresh
+      away from "/". It is therefore a real, user-visible document, not just a
+      redirect stub: it needs the same icon, title and theme as index.html, or
+      the tab shows a blank favicon and a white flash before the redirect runs.
+    -->
+    <title>GitMe | Akif Ejaz</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Root-absolute so it resolves from any path depth. -->
+    <script src="/theme-init.js"></script>
+    <style>
+        html { background: #0d1117; }
+        html.light { background: #ffffff; }
+    </style>
     <script type="text/javascript">
         // Single Page Apps for GitHub Pages
         // https://github.com/rafgraph/spa-github-pages

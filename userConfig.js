@@ -1,5 +1,5 @@
 /**
- * User Configuration — Portfolio Data
+ * User Configuration - Portfolio Data
  *
  * Single source of truth for the front page (HomePage). Edit these arrays
  * to update what's rendered on `/`. The GitHub contribution data on
@@ -38,14 +38,14 @@ const userConfig = {
 
     // --- Experience ---
     // Each entry supports either `logo` (explicit URL/path like "/logos/foo.svg")
-    // or `logoDomain` (e.g. "eclipse.org" — auto-fetched favicon). Omit both
+    // or `logoDomain` (e.g. "eclipse.org" - auto-fetched favicon). Omit both
     // to fall back to an initials monogram.
     experience: [
         {
             role: "Sr. Engineer",
             org: "10xEngineers",
             logoDomain: "10xengineers.ai",
-            period: "Mar 2025 — Present",
+            period: "Mar 2025 - Present",
             location: "Lahore, PK",
             highlights: [
                 "Leading strategic collaboration with the Eclipse Foundation to architect and scale RISC-V support for the Eclipse ThreadX RTOS, by driving architectural clean-ups, feature work, and long-term maintainability for both RV64 and RV32 ports.",
@@ -58,10 +58,10 @@ const userConfig = {
         {
             role: "Software Engineer II",
             org: "Xcelerium Inc.",
-            // DDG returns a placeholder for xcelerium.com — pin the real SVG mark instead.
+            // DDG returns a placeholder for xcelerium.com - pin the real SVG mark instead.
             logo: "https://xcelerium.com/wp-content/uploads/2025/09/x-favicon.svg",
             logoDomain: "xcelerium.com",
-            period: "Mar 2023 — Feb 2025",
+            period: "Mar 2023 - Feb 2025",
             location: "California, USA",
             highlights: [
                 "Built the custom BSP for Xcelerium's RISC-V64 core in Zephyr RTOS and also enabled proprietary RISC-V instructions including the Vector Extension in it.",
@@ -77,7 +77,7 @@ const userConfig = {
             role: "Committer",
             org: "Eclipse ThreadX (Eclipse Foundation)",
             logoDomain: "eclipse.org",
-            period: "Feb 2026 — Present",
+            period: "Feb 2026 - Present",
             location: "Open Source",
             highlights: [
                 "I'm Official committer at Eclipse ThreadX under Eclipse Foundation, responsible for maintaining, reviewing and merging \
@@ -89,7 +89,7 @@ const userConfig = {
             role: "Maintainer (BananaPi BPI-F3 support)",
             org: "seL4 Microkernel",
             logoDomain: "sel4.systems",
-            period: "Dec 2025 — Present",
+            period: "Dec 2025 - Present",
             location: "Open Source",
             highlights: [
                 "Added BananaPi BPI-F3 (SpacemiT K1) board support to the seL4 microkernel.",
@@ -102,7 +102,7 @@ const userConfig = {
             role: "Contributor",
             org: "Linux Kernel",
             logoDomain: "kernel.org",
-            period: "2025 — Present",
+            period: "2025 - Present",
             location: "Upstream",
             highlights: [
                 "Upstream patch merged in v6.20 SPI subsystem: `spi: cadence-qspi` (drivers/spi/spi-cadence-quadspi.c) and stable-backported into the 6.19.4 series.",
@@ -118,27 +118,71 @@ const userConfig = {
             school: "Information Technology University (ITU)",
             degree: "B.S. Computer Engineering (BSCE)",
             logoDomain: "itu.edu.pk",
-            period: "2019 — 2023",
+            period: "2019 - 2023",
             location: "Lahore, PK",
             note: "CGPA 3.76 / 4.00, focus on OS/systems, embedded, and computer architecture."
         }
     ],
 
+    // --- Certifications ---
+    // Mirrored from Credly (https://www.credly.com/users/<username>). 
+    certifications: [
+        {
+            name: "LFD114: Porting Software to RISC-V",
+            issuer: "The Linux Foundation",
+            issuerDomain: "linuxfoundation.org",
+            date: "Apr 2026",
+            credentialUrl: "https://www.credly.com/badges/c064482c-6efa-4dd0-b30e-4c2b555dfac5",
+            image: "https://images.credly.com/images/da1051ef-c157-4e2b-8c94-00db3b5d696b/blob",
+            skills: ["RISC-V Assembly Language", "RISC-V system integration", "RISC-V vector intrinsics"]
+        },
+        {
+            name: "LFD123: Open Source RT-Thread RTOS on RISC-V",
+            issuer: "The Linux Foundation",
+            issuerDomain: "linuxfoundation.org",
+            date: "Jul 2025",
+            credentialUrl: "https://www.credly.com/badges/2d13b7d0-bdcc-44db-83c7-bca4c2cea201",
+            image: "https://images.credly.com/images/84f4cb1a-5384-4f00-aadd-9154bae68826/blob",
+            skills: ["RISC-V Architecture", "Embedded Systems Development", "Multi-Thread Programming", "RT-Thread for RISC-V"]
+        },
+        {
+            name: "LFD103: A Beginner's Guide to Linux Kernel Development",
+            issuer: "The Linux Foundation",
+            issuerDomain: "linuxfoundation.org",
+            date: "Jul 2025",
+            credentialUrl: "https://www.credly.com/badges/2bf7a652-f8d9-491e-a223-e1b96b4d7b92",
+            image: "https://images.credly.com/images/c6d2f560-62c8-4b89-a825-aa982fdafed7/blob",
+            skills: ["Linux Kernel", "Git", "Commit Logs", "Contributor Covenant Code of Conduct"]
+        },
+        {
+            name: "LFD110: Introduction to RISC-V",
+            issuer: "The Linux Foundation",
+            issuerDomain: "linuxfoundation.org",
+            date: "Dec 2024",
+            credentialUrl: "https://www.credly.com/badges/c0493ad4-6800-4c6f-89c5-9b8586b51d41",
+            image: "https://images.credly.com/images/fe724d20-7a05-417e-b10a-29e458a3fc04/blob",
+            skills: ["Instruction Set Architecture", "Assembly Language", "RISC-V", "Community"]
+        }
+    ],
+
+    // Public Credly profile, linked from the certifications section.
+    credlyProfile: "https://www.credly.com/users/akifejaz",
+
     // --- Projects / Works ---
-    // Card link fields — all optional except `link`:
+    // Card link fields - all optional except `link`:
     //   link         → project home (renders on the title)
     //   srcUrl       → source repo         → footer: "source ↗"
     //   downloadUrl  → release / download   → footer: "download ↗"
     //   prsUrl       → author-filtered PRs  → footer: "my PRs ↗"
     // Each of the footer entries also takes an optional label override
-    // (`srcLabel`, `downloadLabel`, `prsLabel`) — e.g. `prsLabel: "7 PRs"`.
+    // (`srcLabel`, `downloadLabel`, `prsLabel`) - e.g. `prsLabel: "7 PRs"`.
     projects: [
         {
             name: "ATESOR",
             year: "Mar 2026",
             tags: ["Agentic AI", "RISC-V", "LangGraph", "RISC-V Porting", "RISC-V Software"],
             description:
-                "Open-source multi-stage agentic framework for autonomous RISC-V software porting — LangGraph-driven agents with Docker + native RISC-V test environments.",
+                "Open-source multi-stage framework that ports software to RISC-V automatically. It uses LangGraph agents, Docker containers, and native RISC-V test environments.",
             link: "https://github.com/akifejaz/atesor",
             prsUrl: "https://github.com/akifejaz/atesor/pulls?q=is%3Apr+author%3Aakifejaz"
         },
@@ -147,7 +191,7 @@ const userConfig = {
             year: "Feb 2026",
             tags: ["RTOS", "RISC-V", "Maintainer", "Device Drivers", "BSP"],
             description:
-                "Official Eclipse ThreadX committer — improving RISC-V support to make ThreadX a RISC-V–first RTOS.",
+                "Official Eclipse ThreadX committer, improving RISC-V support to make ThreadX a RISC-V-first RTOS.",
             link: "https://github.com/eclipse-threadx",
             prsUrl: "https://github.com/eclipse-threadx/threadx/pulls?q=is%3Apr+author%3Aakifejaz"
         },
@@ -156,16 +200,16 @@ const userConfig = {
             year: "Dec 2025",
             tags: ["Microkernel", "RISC-V", "Maintainer", "Device Drivers", "BSP"],
             description:
-                "Added and now officially maintain BananaPi BPI-F3 board support in the seL4 microkernel — kernel init, peripheral drivers, 100% seL4-test pass rate.",
+                "Added and now officially maintain BananaPi BPI-F3 board support in the seL4 microkernel: kernel init, peripheral drivers, and a 100% seL4-test pass rate.",
             link: "https://github.com/seL4/seL4",
             prsUrl: "https://github.com/seL4/seL4/pulls?q=is%3Apr+author%3Aakifejaz"
         },
         {
             name: "Cloud-V",
-            year: "2024 — Present",
+            year: "2024 - Present",
             tags: ["Infrastructure", "RISC-V", "CI"],
             description:
-                "RISC-V CI Services Platform — 97.6% uptime, 120+ global users, virtualized emulated hardware for CI and developer environments.",
+                "RISC-V CI Services Platform with 97.6% uptime, 120+ global users, and virtualized emulated hardware for CI and developer environments.",
             link: "https://cloud-v.co",
             prsUrl: "https://github.com/10x-Engineers/Cloud-V/pulls?q=is%3Apr+author%3Aakifejaz"
         },
@@ -183,7 +227,7 @@ const userConfig = {
             year: "2025",
             tags: ["Chrome MV3", "Upwork", "Extension", "Freelance"],
             description:
-                "Chrome MV3 extension that upgrades Upwork job search with a draggable in-page panel — smart filters (post age, min spend, proposal count) and inline job enrichment (hire rate, client history, reviews, last-viewed). Runs 100% client-side, no external servers.",
+                "Chrome MV3 extension that upgrades Upwork job search with a draggable in-page panel: smart filters (post age, min spend, proposal count) and inline job enrichment (hire rate, client history, reviews, last-viewed). Runs 100% client-side, no external servers.",
             link: "https://akifejaz.github.io/docs-upcraft/",
             downloadUrl: "https://github.com/akifejaz/docs-upcraft/releases/latest"
         }
@@ -264,7 +308,7 @@ const userConfig = {
                 "Beginner's Guide to Linux Distros: Why They Multiply, and How to Know Which You're Using",
             date: "Aug 26, 2025",
             summary:
-                "Linux has more flavors than your local ice cream shop — a friendly tour of the distro family tree.",
+                "Linux has more flavors than your local ice cream shop. This is a friendly tour of the distro family tree.",
             link: "https://medium.com/@akifejaz/beginners-guide-to-linux-distros-why-they-multiply-and-how-to-know-which-you-re-using-abc435ea0fce"
         },
         {
@@ -277,7 +321,7 @@ const userConfig = {
         },
         {
             title:
-                "How Simple Geometry Builds the Foundation of Machine Learning — 6 Key Insights",
+                "How Simple Geometry Builds the Foundation of Machine Learning - 6 Key Insights",
             date: "Aug 2, 2025",
             summary:
                 "From red-and-blue dots on graph paper to the intuition behind modern ML models.",
@@ -335,7 +379,7 @@ const userConfig = {
         {
             name: "Cloud-V",
             url: "https://cloud-v.co",
-            // DDG returns a placeholder for cloud-v.co — pin the real logo instead.
+            // DDG returns a placeholder for cloud-v.co - pin the real logo instead.
             logo: "https://cloud-v.co/cloudv_website/static/src/img/logo.png",
             logoDomain: "cloud-v.co"
         },

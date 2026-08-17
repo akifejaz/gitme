@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ------------------------------------------------------------------ */
-/*  Theme tokens — dark is the default; .light on <html> flips them.  */
+/*  Theme tokens - dark is the default; .light on <html> flips them.  */
 /*  Values are r g b triples so Tailwind can apply /<alpha-value>.    */
 /* ------------------------------------------------------------------ */
 :root,
@@ -128,5 +128,5 @@ body,
   line-height: 24px;
 }
 
-/* Markdown/prose rendering styles removed — the markdown view they targeted
+/* Markdown/prose rendering styles removed - the markdown view they targeted
    (react-markdown) is no longer part of the app. */
