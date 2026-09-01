@@ -297,6 +297,14 @@ const userConfig = {
     blogs: [
         {
             title:
+                "Why is your LLM confidently wrong about RISC-V? Here's the fix.",
+            date: "Sep 1, 2026",
+            summary:
+                "Assistants agree with your premise instead of the specification. Grounding every answer in the ratified specs and the RISC-V Unified Database fixes it.",
+            link: "https://medium.com/@akifejaz/why-is-your-llm-confidently-wrong-about-risc-v-heres-the-fix-53f5f415b105"
+        },
+        {
+            title:
                 "Porting seL4 to the Banana Pi BPI-F3",
             date: "July 29, 2026",
             summary:
