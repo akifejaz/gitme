@@ -313,6 +313,14 @@ const userConfig = {
         },
         {
             title:
+                "Beyond the Basics: Elevating Eclipse ThreadX to a First-Class RTOS for RISC-V",
+            date: "Jul 2026",
+            summary:
+                "The Eclipse Newsletter write-up of the RISC-V Summit EU talk: what Eclipse ThreadX still needs to become a first-class RTOS on RISC-V.",
+            link: "https://newsroom.eclipse.org/eclipse-newsletter/2026/july/beyond-basics-elevating-eclipse-threadx-first-class-rtos-risc-v"
+        },
+        {
+            title:
                 "Beginner's Guide to Linux Distros: Why They Multiply, and How to Know Which You're Using",
             date: "Aug 26, 2025",
             summary:
