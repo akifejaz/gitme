@@ -19,7 +19,7 @@ const Navbar = ({ data, onLogout, username }) => {
         <nav className="border-b border-github-border bg-github-bg-secondary sticky top-0 z-50">
             <div className="max-w-[1280px] mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 sm:gap-6 min-w-0">
-                    <NavLink to="/home" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
+                    <NavLink to="/" end className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
                         <GitMeLogo size={32} className="text-github-text" />
                         <span className="font-bold text-base tracking-tight text-github-text hidden sm:inline">GitMe</span>
                     </NavLink>
@@ -27,7 +27,8 @@ const Navbar = ({ data, onLogout, username }) => {
                     {data && (
                         <div className="flex items-center gap-0.5 sm:gap-1">
                             <NavLink
-                                to="/home"
+                                to="/"
+                                end
                                 className={({ isActive }) =>
                                     `px-2 sm:px-3 py-[18px] text-sm font-medium border-b-2 transition-colors ${isActive
                                         ? 'text-github-text border-github-status-closed'
